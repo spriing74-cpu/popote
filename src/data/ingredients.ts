@@ -1,0 +1,133 @@
+import type { AisleId, BaseUnit, Ingredient } from '../domain/types';
+
+// Conditionnements et poids unitaires : valeurs courantes et INDICATIVES, pour rendre la
+// liste de courses lisible. La quantité réellement nécessaire est toujours affichée à côté.
+
+function ing(id: string, name: string, aisle: AisleId, unit: BaseUnit, extra: Partial<Ingredient> = {}): Ingredient {
+  return { id, name, aisle, unit, ...extra };
+}
+
+const list: Ingredient[] = [
+  // Fruits et légumes
+  ing('carotte', 'Carottes', 'fruits_legumes', 'g', { pieceWeightG: 125 }),
+  ing('oignon', 'Oignons jaunes', 'fruits_legumes', 'pc', { pieceWeightG: 150, pieceLabel: 'oignon' }),
+  ing('oignon_rouge', 'Oignons rouges', 'fruits_legumes', 'pc', { pieceWeightG: 150, pieceLabel: 'oignon' }),
+  ing('echalote', 'Échalotes', 'fruits_legumes', 'pc', { pieceWeightG: 30, pieceLabel: 'échalote' }),
+  ing('ail', 'Ail', 'fruits_legumes', 'pc', { pieceWeightG: 5, pieceLabel: 'gousse', pack: { size: 10, label: "tête d'ail (~10 gousses)" } }),
+  ing('pomme_de_terre', 'Pommes de terre', 'fruits_legumes', 'g', { pieceWeightG: 150 }),
+  ing('patate_douce', 'Patates douces', 'fruits_legumes', 'g', { pieceWeightG: 300 }),
+  ing('courgette', 'Courgettes', 'fruits_legumes', 'g', { pieceWeightG: 250 }),
+  ing('aubergine', 'Aubergines', 'fruits_legumes', 'g', { pieceWeightG: 300 }),
+  ing('tomate', 'Tomates', 'fruits_legumes', 'g', { pieceWeightG: 120 }),
+  ing('tomate_cerise', 'Tomates cerises', 'fruits_legumes', 'g', { pack: { size: 250, label: 'barquette de 250 g' } }),
+  ing('poivron', 'Poivrons', 'fruits_legumes', 'pc', { pieceWeightG: 180, pieceLabel: 'poivron' }),
+  ing('concombre', 'Concombre', 'fruits_legumes', 'pc', { pieceWeightG: 350, pieceLabel: 'concombre' }),
+  ing('salade_verte', 'Salade (laitue / batavia)', 'fruits_legumes', 'pc', { pieceWeightG: 300, pieceLabel: 'salade' }),
+  ing('jeunes_pousses', 'Jeunes pousses / mâche', 'fruits_legumes', 'g', { pack: { size: 125, label: 'sachet de 125 g' } }),
+  ing('champignon', 'Champignons de Paris', 'fruits_legumes', 'g', { pack: { size: 250, label: 'barquette de 250 g' } }),
+  ing('poireau', 'Poireaux', 'fruits_legumes', 'pc', { pieceWeightG: 200, pieceLabel: 'poireau' }),
+  ing('brocoli', 'Brocoli', 'fruits_legumes', 'g', { pieceWeightG: 400 }),
+  ing('endive', 'Endives', 'fruits_legumes', 'pc', { pieceWeightG: 150, pieceLabel: 'endive' }),
+  ing('avocat', 'Avocats', 'fruits_legumes', 'pc', { pieceWeightG: 200, pieceLabel: 'avocat' }),
+  ing('citron', 'Citrons', 'fruits_legumes', 'pc', { pieceWeightG: 120, pieceLabel: 'citron' }),
+  ing('persil', 'Persil', 'fruits_legumes', 'pc', { pieceLabel: 'bouquet' }),
+  ing('coriandre', 'Coriandre', 'fruits_legumes', 'pc', { pieceLabel: 'bouquet' }),
+  ing('ciboulette', 'Ciboulette', 'fruits_legumes', 'pc', { pieceLabel: 'bouquet' }),
+  ing('pomme', 'Pommes', 'fruits_legumes', 'pc', { pieceWeightG: 160, pieceLabel: 'pomme' }),
+  ing('banane', 'Bananes', 'fruits_legumes', 'pc', { pieceWeightG: 120, pieceLabel: 'banane' }),
+  ing('clementine', 'Clémentines / fruits de saison', 'fruits_legumes', 'pc', { pieceWeightG: 70, pieceLabel: 'fruit' }),
+
+  // Boucherie / volaille
+  ing('poulet_filet', 'Filets de poulet', 'boucherie', 'g'),
+  ing('poulet_cuisse', 'Cuisses de poulet', 'boucherie', 'pc', { pieceWeightG: 250, pieceLabel: 'cuisse' }),
+  ing('dinde_escalope', 'Escalopes de dinde', 'boucherie', 'g'),
+  ing('boeuf_hache', 'Bœuf haché 5 %', 'boucherie', 'g'),
+  ing('boeuf_mijoter', 'Bœuf à mijoter (paleron, macreuse)', 'boucherie', 'g'),
+  ing('porc_filet', 'Filet mignon de porc', 'boucherie', 'g'),
+  ing('saucisse_toulouse', 'Saucisses de Toulouse', 'boucherie', 'pc', { pieceWeightG: 110, pieceLabel: 'saucisse' }),
+
+  // Poissonnerie
+  ing('saumon_pave', 'Pavés de saumon', 'poissonnerie', 'g', { pieceWeightG: 125, allergens: ['poisson'] }),
+
+  // Produits frais
+  ing('oeuf', 'Œufs', 'frais', 'pc', { pieceWeightG: 55, pieceLabel: 'œuf', pack: { size: 6, label: 'boîte de 6 œufs' }, allergens: ['oeuf'] }),
+  ing('lait', 'Lait demi-écrémé', 'frais', 'ml', { densityGPerMl: 1.03, pack: { size: 1000, label: 'brique de 1 l' }, allergens: ['lait'] }),
+  ing('creme_liquide', 'Crème liquide', 'frais', 'ml', { densityGPerMl: 1, pack: { size: 200, label: 'brique de 20 cl' }, allergens: ['lait'] }),
+  ing('creme_epaisse', 'Crème fraîche épaisse', 'frais', 'ml', { densityGPerMl: 1, pack: { size: 200, label: 'pot de 20 cl' }, allergens: ['lait'] }),
+  ing('beurre', 'Beurre', 'frais', 'g', { pack: { size: 250, label: 'plaquette de 250 g' }, allergens: ['lait'] }),
+  ing('emmental_rape', 'Emmental râpé', 'frais', 'g', { pack: { size: 200, label: 'sachet de 200 g' }, allergens: ['lait'] }),
+  ing('comte', 'Comté / fromage à pâte dure', 'frais', 'g', { pack: { size: 200, label: 'morceau de 200 g' }, allergens: ['lait'] }),
+  ing('parmesan', 'Parmesan', 'frais', 'g', { pack: { size: 100, label: 'morceau de 100 g' }, allergens: ['lait'] }),
+  ing('feta', 'Feta', 'frais', 'g', { pack: { size: 200, label: 'bloc de 200 g' }, allergens: ['lait'] }),
+  ing('mozzarella', 'Mozzarella', 'frais', 'g', { pack: { size: 125, label: 'boule de 125 g' }, allergens: ['lait'] }),
+  ing('chevre_buche', 'Bûche de chèvre', 'frais', 'g', { pack: { size: 180, label: 'bûche de 180 g' }, allergens: ['lait'] }),
+  ing('fromage_frais', 'Fromage frais (type carré frais)', 'frais', 'g', { pack: { size: 150, label: 'barquette de 150 g' }, allergens: ['lait'] }),
+  ing('fromage_blanc', 'Fromage blanc', 'frais', 'g', { pack: { size: 500, label: 'pot de 500 g' }, allergens: ['lait'] }),
+  ing('yaourt_nature', 'Yaourts nature', 'frais', 'pc', { pieceWeightG: 125, pieceLabel: 'yaourt', pack: { size: 4, label: 'pack de 4 yaourts' }, allergens: ['lait'] }),
+  ing('jambon_blanc', 'Jambon blanc', 'frais', 'pc', { pieceWeightG: 45, pieceLabel: 'tranche', pack: { size: 4, label: 'paquet de 4 tranches' } }),
+  ing('lardons', 'Lardons', 'frais', 'g', { pack: { size: 200, label: 'barquette de 200 g' } }),
+  ing('saumon_fume', 'Saumon fumé', 'frais', 'g', { pack: { size: 120, label: 'paquet de 4 tranches (~120 g)' }, allergens: ['poisson'] }),
+  ing('pate_brisee', 'Pâte brisée', 'frais', 'pc', { pieceLabel: 'rouleau', allergens: ['gluten'] }),
+  ing('pate_pizza', 'Pâte à pizza', 'frais', 'pc', { pieceLabel: 'rouleau', allergens: ['gluten'] }),
+
+  // Boulangerie
+  ing('baguette', 'Baguette', 'boulangerie', 'pc', { pieceWeightG: 250, pieceLabel: 'baguette', allergens: ['gluten'] }),
+  ing('pain_campagne', 'Pain de campagne', 'boulangerie', 'g', { pack: { size: 500, label: 'pain de 500 g' }, allergens: ['gluten'] }),
+
+  // Épicerie salée
+  ing('pates_courtes', 'Pâtes courtes (penne, fusilli…)', 'epicerie_salee', 'g', { pack: { size: 500, label: 'paquet de 500 g' }, allergens: ['gluten'] }),
+  ing('spaghetti', 'Spaghetti', 'epicerie_salee', 'g', { pack: { size: 500, label: 'paquet de 500 g' }, allergens: ['gluten'] }),
+  ing('lasagnes', 'Feuilles de lasagnes', 'epicerie_salee', 'g', { pack: { size: 500, label: 'boîte de 500 g' }, allergens: ['gluten'] }),
+  ing('riz', 'Riz long', 'epicerie_salee', 'g', { pack: { size: 1000, label: 'paquet de 1 kg' } }),
+  ing('semoule', 'Semoule moyenne', 'epicerie_salee', 'g', { pack: { size: 500, label: 'paquet de 500 g' }, allergens: ['gluten'] }),
+  ing('quinoa', 'Quinoa', 'epicerie_salee', 'g', { pack: { size: 500, label: 'paquet de 500 g' } }),
+  ing('lentilles_vertes', 'Lentilles vertes', 'epicerie_salee', 'g', { pack: { size: 500, label: 'paquet de 500 g' } }),
+  ing('lentilles_corail', 'Lentilles corail', 'epicerie_salee', 'g', { pack: { size: 500, label: 'paquet de 500 g' } }),
+  ing('pois_chiches', 'Pois chiches en conserve (égouttés)', 'epicerie_salee', 'g', { pack: { size: 265, label: 'boîte 4/4 (~265 g égouttés)' } }),
+  ing('haricots_rouges', 'Haricots rouges en conserve (égouttés)', 'epicerie_salee', 'g', { pack: { size: 250, label: 'boîte 4/4 (~250 g égouttés)' } }),
+  ing('mais', 'Maïs doux en conserve', 'epicerie_salee', 'g', { pack: { size: 285, label: 'boîte (~285 g égouttés)' } }),
+  ing('thon', 'Thon au naturel (égoutté)', 'epicerie_salee', 'g', { pack: { size: 112, label: 'boîte (~112 g égouttés)' }, allergens: ['poisson'] }),
+  ing('tomates_concassees', 'Tomates concassées', 'epicerie_salee', 'g', { pack: { size: 400, label: 'boîte de 400 g' } }),
+  ing('passata', 'Coulis de tomate (passata)', 'epicerie_salee', 'g', { pack: { size: 500, label: 'bouteille de 500 g' } }),
+  ing('lait_coco', 'Lait de coco', 'epicerie_salee', 'ml', { densityGPerMl: 1, pack: { size: 400, label: 'boîte de 40 cl' } }),
+  ing('sauce_soja', 'Sauce soja', 'epicerie_salee', 'ml', { pack: { size: 250, label: 'bouteille de 25 cl' }, allergens: ['soja', 'gluten'] }),
+  ing('pesto', 'Pesto', 'epicerie_salee', 'g', { pack: { size: 190, label: 'pot de 190 g' }, allergens: ['lait'] }),
+  ing('mayonnaise', 'Mayonnaise', 'epicerie_salee', 'g', { pack: { size: 235, label: 'pot de 235 g' }, allergens: ['oeuf', 'moutarde'] }),
+  ing('olives', 'Olives noires dénoyautées', 'epicerie_salee', 'g', { pack: { size: 150, label: 'bocal (~150 g égouttés)' } }),
+  ing('cornichons', 'Cornichons', 'epicerie_salee', 'g', { pack: { size: 200, label: 'bocal (~200 g égouttés)' }, allergens: ['moutarde'] }),
+  ing('tortilla', 'Galettes de blé (wraps)', 'epicerie_salee', 'pc', { pieceLabel: 'galette', pack: { size: 8, label: 'paquet de 8 galettes' }, allergens: ['gluten'] }),
+  ing('pain_pita', 'Pains pita', 'epicerie_salee', 'pc', { pieceLabel: 'pita', pack: { size: 6, label: 'paquet de 6 pitas' }, allergens: ['gluten'] }),
+  ing('bouillon', 'Bouillon (cube)', 'epicerie_salee', 'pc', { pieceLabel: 'cube', staple: true, allergens: ['celeri'] }),
+  ing('huile_olive', "Huile d'olive", 'epicerie_salee', 'ml', { densityGPerMl: 0.92, staple: true }),
+  ing('huile_neutre', 'Huile neutre (tournesol, colza)', 'epicerie_salee', 'ml', { densityGPerMl: 0.92, staple: true }),
+  ing('vinaigre', 'Vinaigre', 'epicerie_salee', 'ml', { staple: true, allergens: ['sulfites'] }),
+  ing('moutarde', 'Moutarde de Dijon', 'epicerie_salee', 'g', { staple: true, allergens: ['moutarde'] }),
+  ing('farine', 'Farine de blé', 'epicerie_salee', 'g', { staple: true, allergens: ['gluten'] }),
+  ing('levure_chimique', 'Levure chimique', 'epicerie_salee', 'g', { staple: true }),
+  ing('sel', 'Sel', 'epicerie_salee', 'g', { staple: true }),
+  ing('poivre', 'Poivre', 'epicerie_salee', 'g', { staple: true }),
+  ing('herbes_provence', 'Herbes de Provence / thym', 'epicerie_salee', 'g', { staple: true }),
+  ing('cumin', 'Cumin', 'epicerie_salee', 'g', { staple: true }),
+  ing('paprika', 'Paprika', 'epicerie_salee', 'g', { staple: true }),
+  ing('curry', 'Curry en poudre', 'epicerie_salee', 'g', { staple: true }),
+  ing('ras_el_hanout', 'Ras el hanout', 'epicerie_salee', 'g', { staple: true }),
+  ing('laurier', 'Laurier', 'epicerie_salee', 'pc', { pieceLabel: 'feuille', staple: true }),
+
+  // Épicerie sucrée
+  ing('sucre', 'Sucre', 'epicerie_sucree', 'g', { staple: true }),
+  ing('miel', 'Miel', 'epicerie_sucree', 'g', { pack: { size: 250, label: 'pot de 250 g' } }),
+  ing('compote', 'Compotes en gourde', 'epicerie_sucree', 'pc', { pieceLabel: 'gourde', pack: { size: 4, label: 'lot de 4 gourdes' } }),
+  ing('amandes', 'Amandes / noix nature', 'epicerie_sucree', 'g', { pack: { size: 200, label: 'sachet de 200 g' }, allergens: ['fruits_a_coque'] }),
+  ing('barre_cereales', 'Barres de céréales', 'epicerie_sucree', 'pc', { pieceLabel: 'barre', pack: { size: 6, label: 'boîte de 6 barres' }, allergens: ['gluten'] }),
+
+  // Boissons
+  ing('vin_rouge', 'Vin rouge (cuisine)', 'boissons', 'ml', { pack: { size: 750, label: 'bouteille de 75 cl' }, allergens: ['sulfites'] }),
+
+  // Surgelés
+  ing('haricots_verts', 'Haricots verts surgelés', 'surgeles', 'g', { pack: { size: 1000, label: 'sachet de 1 kg' } }),
+  ing('petits_pois', 'Petits pois surgelés', 'surgeles', 'g', { pack: { size: 1000, label: 'sachet de 1 kg' } }),
+  ing('epinards', 'Épinards hachés surgelés', 'surgeles', 'g', { pack: { size: 750, label: 'sachet de 750 g' } }),
+  ing('poisson_blanc', 'Filets de poisson blanc surgelés (colin, cabillaud)', 'surgeles', 'g', { pack: { size: 400, label: 'sachet de 400 g' }, allergens: ['poisson'] }),
+];
+
+export const INGREDIENTS: Record<string, Ingredient> = Object.fromEntries(list.map((i) => [i.id, i]));
