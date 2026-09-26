@@ -3067,3 +3067,324 @@ img {
 .recipe-actions {
   flex-wrap: wrap;
 }
+
+
+/* =========================================================================
+   iPhone : plein écran sous la barre d'état et verrouillage horizontal
+   ========================================================================= */
+
+/* Rien ne doit faire défiler la page de gauche à droite (écran « bloqué » comme une app). */
+html,
+body {
+  overflow-x: clip;
+  overscroll-behavior-x: none;
+  width: 100%;
+}
+.content,
+.sheet,
+.store-mode,
+.cook {
+  overflow-x: clip;
+}
+.sheet-body {
+  overflow-x: hidden;
+  overscroll-behavior-x: none;
+}
+.recipe-detail,
+.recipe-detail * {
+  max-width: 100%;
+}
+.recipe-detail .shelf-row {
+  max-width: none;
+}
+img,
+table {
+  max-width: 100%;
+}
+.qty-table {
+  table-layout: fixed;
+  word-break: break-word;
+}
+
+/* Barre d'état translucide : le décor passe dessous (Dynamic Island, encoche, quel que soit le
+   modèle, grâce à env(safe-area-inset-top)). En clair, un léger voile garde l'heure lisible. */
+.status-scrim {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: calc(env(safe-area-inset-top) + 6px);
+  z-index: 70;
+  pointer-events: none;
+}
+:root[data-scheme='light'] .status-scrim {
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.32), rgba(0, 0, 0, 0));
+}
+:root[data-theme='nothing'][data-scheme='light'] .status-scrim {
+  background: #000;
+}
+
+
+/* =========================================================================
+   Mode magasin, plan de session batch, import de recettes
+   ========================================================================= */
+
+.store-bar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin: 4px 0 10px;
+}
+.store-bar .btn {
+  flex: 1 1 100%;
+}
+.store-mode {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  padding: calc(env(safe-area-inset-top) + 8px) 0 0;
+  animation: action-in 0.35s cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+.store-mode::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--bg-art);
+  z-index: -1;
+}
+.store-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 16px;
+}
+.store-title {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+.store-title b {
+  font-size: 1.25rem;
+}
+.store-title span {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+.store-count {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.5rem;
+  font-variant-numeric: tabular-nums;
+}
+.store-progress {
+  margin: 10px 16px 4px;
+  flex: none;
+}
+.store-body {
+  flex: 1;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 4px 16px calc(env(safe-area-inset-bottom) + 24px);
+}
+.store-aisle {
+  font-size: 1.05rem;
+  margin: 18px 4px 8px;
+  text-transform: var(--title-transform);
+}
+.store-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  min-height: 68px;
+  padding: 12px 16px;
+  border: 0;
+  background: none;
+  text-align: left;
+  color: var(--text);
+}
+.store-check {
+  width: 30px;
+  height: 30px;
+  flex: none;
+  border-radius: 50%;
+  border: 2.5px solid color-mix(in srgb, var(--text) 30%, transparent);
+  display: grid;
+  place-items: center;
+  color: #fff;
+}
+.store-check.on {
+  background: var(--ok);
+  border-color: var(--ok);
+}
+:root[data-theme='nothing'] .store-check.on {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.store-label {
+  flex: 1;
+  font-size: 1.2rem;
+  font-weight: 650;
+  line-height: 1.2;
+}
+.store-qty {
+  font-size: 1.05rem;
+  font-weight: 700;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  max-width: 45%;
+}
+.store-list.basket .store-label,
+.store-list.basket .store-qty {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+.store-basket-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 22px 4px 8px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+.store-done {
+  text-align: center;
+  padding: 40px 8px;
+}
+.aisle-rank {
+  width: 28px;
+  height: 28px;
+  flex: none;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  font-size: 0.85rem;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.list-row .icon-btn {
+  width: 36px;
+  height: 36px;
+  box-shadow: none;
+}
+.list-row .icon-btn:disabled {
+  opacity: 0.3;
+}
+
+/* ---------- Session batch cooking ---------- */
+.session-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  margin: 4px 0 10px;
+  padding: 12px 14px;
+  border-radius: var(--radius);
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--glass-border));
+  background: color-mix(in srgb, var(--accent) 8%, var(--surface));
+  -webkit-backdrop-filter: var(--blur);
+  backdrop-filter: var(--blur);
+  text-align: left;
+  color: var(--text);
+}
+.session-card > span:nth-child(2) {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+.session-card .small {
+  color: var(--muted);
+}
+.timeline {
+  list-style: none;
+  margin: 14px 0;
+  padding: 0;
+  position: relative;
+}
+.timeline::before {
+  content: '';
+  position: absolute;
+  left: 13px;
+  top: 8px;
+  bottom: 8px;
+  width: 2px;
+  background: color-mix(in srgb, var(--text) 12%, transparent);
+}
+.timeline li {
+  position: relative;
+  display: grid;
+  grid-template-columns: 28px 52px 1fr;
+  gap: 8px;
+  align-items: start;
+  padding: 8px 0;
+}
+.tl-check {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid color-mix(in srgb, var(--text) 25%, transparent);
+  background: var(--bg);
+  display: grid;
+  place-items: center;
+  color: #fff;
+  padding: 0;
+  z-index: 1;
+}
+.timeline li.done .tl-check {
+  background: var(--ok);
+  border-color: var(--ok);
+}
+.timeline li.next .tl-check {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px var(--accent-soft);
+}
+.tl-time {
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  padding-top: 4px;
+  font-size: 0.9rem;
+}
+.tl-text {
+  padding-top: 3px;
+  line-height: 1.35;
+}
+.tl-cuisson .tl-text {
+  color: var(--info);
+  font-weight: 600;
+}
+.tl-fin .tl-text {
+  color: var(--muted);
+}
+.timeline li.done .tl-text {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+.timeline li.late .tl-time {
+  color: var(--warn);
+}
+.tl-timer {
+  display: inline-flex;
+  margin-left: 8px;
+  min-height: 30px;
+  padding: 3px 10px;
+  font-size: 0.78rem;
+  vertical-align: middle;
+}
+:root[data-theme='nothing'] .tl-cuisson .tl-text {
+  color: var(--text);
+}
+
+/* ---------- Import ---------- */
+.source-tile.active {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}

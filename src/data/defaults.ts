@@ -53,6 +53,8 @@ export function defaultSettings(): Settings {
     showNutrition: true,
     appBadge: false,
     haptics: true,
+    aisleOrders: {},
+    timerTarget: 'app',
     maxActiveMin: null,
     maxCostLevel: null,
     excludedAllergens: [],

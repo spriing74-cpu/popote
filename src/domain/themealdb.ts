@@ -268,7 +268,7 @@ export function proposeImport(meal: Meal, catalog: Catalog): ImportLine[] {
   });
 }
 
-function roleOf(ingredientId: string): Role {
+export function roleOf(ingredientId: string): Role {
   const f = foodInfo(ingredientId).family;
   if (f === 'viande' || f === 'charcuterie' || f === 'poisson' || f === 'oeuf' || f === 'legumineuse') return 'proteine';
   if (f === 'feculent' || f === 'pain_pate') return 'feculent';

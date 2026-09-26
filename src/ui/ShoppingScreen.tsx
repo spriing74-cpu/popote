@@ -10,6 +10,10 @@ import { Chip, Empty, IconButton, ScreenHeader, uid } from './common';
 import { Icon } from './icons';
 import { SwipeRow } from './SwipeRow';
 import { haptic } from './ios';
+import { AisleOrderSheet, StoreMode, useAisleOrder } from './StoreMode';
+import { useDialog } from './dialog';
+import { STORE_LABELS } from '../domain/budget';
+import type { StoreId } from '../domain/types';
 
 /** Liste de courses calculée depuis le planning (partagée avec le badge de l'onglet). */
 export function useShoppingList() {
@@ -29,9 +33,22 @@ export function ShoppingScreen() {
   const [aisle, setAisle] = useState<AisleId>('divers');
   const [copied, setCopied] = useState(false);
   const [showCovered, setShowCovered] = useState(false);
+  const [storeMode, setStoreMode] = useState(false);
+  const [editAisles, setEditAisles] = useState(false);
+  const dialog = useDialog();
+  const { store, order } = useAisleOrder();
 
   const list = useShoppingList();
-  const groups = groupByAisle(list.items, AISLE_ORDER);
+  const groups = groupByAisle(list.items, order);
+
+  const pickStore = async () => {
+    const choice = await dialog.actions({
+      title: 'Où faites-vous les courses ?',
+      message: 'Chaque magasin garde son ordre des rayons.',
+      actions: (Object.keys(STORE_LABELS) as StoreId[]).map((st) => ({ id: st, label: `${STORE_LABELS[st]}${st === store ? ' ✓' : ''}` })),
+    });
+    if (choice) dispatch({ type: 'updateSettings', patch: { preferredStore: choice as StoreId } });
+  };
   const checkedCount = list.items.filter((i) => state.checked[i.key]).length;
   const total = list.items.length;
 
@@ -104,6 +121,20 @@ export function ShoppingScreen() {
         </button>
       </div>
 
+      {total > 0 && (
+        <div className="store-bar">
+          <button className="btn primary" onClick={() => setStoreMode(true)}>
+            <Icon name="cart" size={18} /> Mode magasin
+          </button>
+          <button className="chip" onClick={pickStore}>
+            🏬 {STORE_LABELS[store]} ▾
+          </button>
+          <button className="chip" onClick={() => setEditAisles(true)}>
+            Rayons
+          </button>
+        </div>
+      )}
+
       {copied && <p className="note ok">✓ Liste copiée.</p>}
 
       {total === 0 ? (
@@ -133,6 +164,9 @@ export function ShoppingScreen() {
           </section>
         );
       })}
+
+      {storeMode && <StoreMode items={list.items} onClose={() => setStoreMode(false)} />}
+      {editAisles && <AisleOrderSheet onClose={() => setEditAisles(false)} />}
 
       {list.covered.length > 0 && (
         <details className="fold" open={showCovered} onToggle={(e) => setShowCovered((e.target as HTMLDetailsElement).open)}>

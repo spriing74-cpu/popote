@@ -1,5 +1,10 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import { haptic } from './ios';
+import { useStore } from '../state/store';
+
+/** Nom du raccourci iOS qui démarre le minuteur d'Horloge avec la durée reçue (en minutes). */
+export const SHORTCUT_NAME = 'Minuteur Popote';
+export const shortcutUrl = (minutes: number) => `shortcuts://run-shortcut?name=${encodeURIComponent(SHORTCUT_NAME)}&input=text&text=${Math.round(minutes)}`;
 import { Icon } from './icons';
 
 // Minuteurs de cuisine : ils continuent quand on change d'écran (pastille flottante),
@@ -32,6 +37,8 @@ export function formatRemaining(ms: number): string {
 }
 
 export function TimersProvider({ children }: { children: ReactNode }) {
+  const { state } = useStore();
+  const iphone = state.settings.timerTarget === 'iphone';
   const [timers, setTimers] = useState<Timer[]>([]);
   const [now, setNow] = useState(() => Date.now());
   const [open, setOpen] = useState(false);
@@ -65,15 +72,19 @@ export function TimersProvider({ children }: { children: ReactNode }) {
     const finished = timers.filter((t) => !t.done && t.endsAt <= now);
     if (finished.length === 0) return;
     setTimers((ts) => ts.map((t) => (finished.some((f) => f.id === t.id) ? { ...t, done: true } : t)));
+    // L'iPhone sonne déjà : l'app se contente d'afficher « terminé ».
+    if (iphone) return;
     haptic('heavy');
     if ('vibrate' in navigator) navigator.vibrate([200, 100, 200]);
     beep();
     setOpen(true);
-  }, [now, timers, beep]);
+  }, [now, timers, beep, iphone]);
 
   const api: TimersApi = {
     timers,
     start: (label, minutes) => {
+      // Minuteur de l'iPhone : il sonne même écran verrouillé. On garde l'affichage dans l'app.
+      if (iphone) window.location.href = shortcutUrl(minutes);
       // Le son doit être « débloqué » pendant un geste de l'utilisateur (Safari).
       try {
         audio.current ??= new AudioContext();

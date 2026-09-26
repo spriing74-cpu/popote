@@ -198,6 +198,49 @@ async function settings(client: Anthropic, body: unknown) {
   return out;
 }
 
+// ---------- Lecture d'une page de recette (sans IA) ----------
+// Les sites de recettes interdisent la lecture directe depuis le navigateur (CORS) : le service
+// récupère la page et ne renvoie que ses données structurées schema.org (JSON-LD).
+
+const MAX_PAGE = 3_000_000;
+
+function isPublicHttps(raw: string): URL | null {
+  let u: URL;
+  try {
+    u = new URL(raw);
+  } catch {
+    return null;
+  }
+  if (u.protocol !== 'https:' || u.username || u.password || (u.port && u.port !== '443')) return null;
+  const host = u.hostname.toLowerCase();
+  // Pas d'adresse locale ni d'IP brute (évite de servir de relais vers un réseau privé).
+  if (host === 'localhost' || host.endsWith('.local') || host.endsWith('.internal') || /^[\d.]+$/.test(host) || host.includes(':')) return null;
+  return u;
+}
+
+export async function recipeBlocks(raw: string, fetchImpl: typeof fetch = fetch): Promise<{ status: number; body: unknown }> {
+  const url = isPublicHttps(raw);
+  if (!url) return { status: 400, body: { error: 'Adresse https publique attendue.' } };
+  let res: Response;
+  try {
+    res = await fetchImpl(url.toString(), {
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; Popote/1.0; lecture de recette)', Accept: 'text/html' },
+      redirect: 'follow',
+      signal: AbortSignal.timeout(10_000),
+    });
+  } catch {
+    return { status: 502, body: { error: 'Page injoignable.' } };
+  }
+  if (!res.ok) return { status: 502, body: { error: `Le site a répondu ${res.status}.` } };
+  if (!(res.headers.get('Content-Type') ?? '').includes('html')) return { status: 415, body: { error: 'Ce lien n’est pas une page web.' } };
+  const html = (await res.text()).slice(0, MAX_PAGE);
+  const blocks = [...html.matchAll(/<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi)]
+    .map((m) => m[1])
+    .filter((b) => b.length < 300_000)
+    .slice(0, 20);
+  return { status: 200, body: { blocks } };
+}
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const origin = request.headers.get('Origin');
@@ -207,6 +250,11 @@ export default {
     if (request.method === 'GET' && pathname === '/health') return json({ ok: true, model: MODEL }, 200, cors);
     // Seule l'application Popote (origines autorisées) peut appeler le service depuis un navigateur.
     if (!cors['Access-Control-Allow-Origin']) return json({ error: 'Origine non autorisée.' }, 403, cors);
+    if (request.method === 'GET' && pathname === '/recipe') {
+      const target = new URL(request.url).searchParams.get('url') ?? '';
+      const r = await recipeBlocks(target);
+      return json(r.body, r.status, cors);
+    }
     if (request.method !== 'POST') return json({ error: 'Méthode non autorisée.' }, 405, cors);
     if (Number(request.headers.get('Content-Length') ?? 0) > MAX_IMAGE_BASE64 + 10_000) return json({ error: 'Requête trop volumineuse.' }, 413, cors);
 

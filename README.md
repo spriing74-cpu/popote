@@ -6,7 +6,7 @@ PWA en français pour planifier les repas **du dimanche au dimanche** par défau
 
 ```bash
 npm install
-npm test            # 87 tests : portions, restes, courses, unités, conservation, durée du planning, reprise des anciennes sauvegardes, tickets (photo, PDF, texte), dates, codes-barres, stock, vide-frigo, prix, import TheMealDB, équipements, suggestions qui apprennent
+npm test            # 94 tests : portions, restes, courses, unités, conservation, durée du planning, reprise des anciennes sauvegardes, tickets (photo, PDF, texte), dates, codes-barres, stock, vide-frigo, prix, import TheMealDB, équipements, suggestions qui apprennent
 npm run dev         # http://localhost:5173 (sans service worker)
 npm run build       # contrôle des types + build de production dans dist/
 npm run preview     # http://localhost:4173 (avec service worker, pour tester le hors-ligne)
@@ -73,6 +73,13 @@ Les dépendances vont de l'interface vers le domaine, jamais l'inverse. La liste
 - **Recettes** : accueil en rayons à faire défiler (avec ce qu'il y a au frigo, préférées, prêt en 20 minutes, à découvrir, boîte du midi, batch cooking, sans viande — renouvelés chaque jour), « Envies » par famille de plats, recherche triable (pertinence, rapidité, A–Z) et accès aux recettes du monde en ligne. La fiche : illustration, onglets **Ingrédients** (pour nous deux / chacun / n portions, ce qui est déjà au frigo ou au placard, ingrédients à cocher, « Ajouter les manquants aux courses »), **Étapes** (minuteurs détectés dans le texte) et **Infos** (équipement, repères nutritionnels, conservation, allergènes), « Ajouter à la semaine » en grille jours × midi / soir, et des recettes proches. **Mode cuisine** : une étape par écran, balayage, écran allumé, minuteurs qui continuent dans toute l'app, et « c'était bon ? » à la fin.
 - **Courses** : liste par rayon, progression, cases persistantes, détail des sources, « J'en ai toujours », ajout rapide (« 2 éponges »), partage, section « déjà à la maison ». Le budget indicatif a été retiré ; les relevés de prix restent dans Réglages.
 - **Réglages** : rubriques Foyer (profils : jours travaillés, lieu du déjeuner, micro-ondes, facteurs, compléments), Planning (semaine et batch cooking, suggestions, goûts et exclusions dont les plats « plus jamais »), Cuisine et courses (équipements, placard, courses, prix, scan), Apparence (**Liquid Glass** ou **Nothing**, clair / sombre / auto), Données et aide (sauvegarde, service IA, conseils et sources).
+
+### Courses en magasin, session batch, import de recettes
+
+- **Mode magasin** (Courses) : plein écran, gros texte, écran allumé, rayons dans l'ordre du magasin choisi (Auchan, E.Leclerc, Lidl…), ce qui est pris descend dans « Dans le panier ». L'ordre des rayons se règle à la main (« Rayons ») ou s'apprend : à la fin des courses, Popote propose de retenir l'ordre dans lequel vous avez coché les rayons.
+- **Plan minuté de la session** (Semaine › Batch cooking) : ordre de lancement calculé pour que four et feux travaillent en même temps (cuissons longues d'abord, accompagnements à la fin, 2 plats au four et 3 feux au plus, un seul cuisinier), heures réelles une fois démarré, minuteurs, quantités, étiquettes des boîtes (❄️ à congeler), et « Tout est cuisiné » qui met le frigo à jour.
+- **Ajouter une recette** (Recettes › +) : depuis un lien (données schema.org des sites de recettes ; si le site bloque la lecture, via le service personnel `GET /recipe` ou en collant le texte du mode Lecteur de Safari), une ou plusieurs photos (lecture sur le téléphone) ou un texte collé. Chaque ingrédient est relu et rattaché au catalogue ; les quantités sont ramenées à une portion.
+- **Minuteur de l'iPhone** (Réglages › iPhone) : via un raccourci « Minuteur Popote » de l'app Raccourcis, qui sonne même écran verrouillé.
 
 ### Expérience iPhone
 

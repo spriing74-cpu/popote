@@ -253,6 +253,10 @@ export interface Settings {
   appBadge: boolean;
   /** Retours haptiques (iPhone sous iOS 18+). */
   haptics: boolean;
+  /** Minuteurs : ceux de l'app, ou celui de l'iPhone (via un raccourci « Minuteur Popote »). */
+  timerTarget: 'app' | 'iphone';
+  /** Ordre des rayons propre à chaque magasin (réglé à la main ou appris en mode magasin). */
+  aisleOrders: Partial<Record<StoreId, AisleId[]>>;
   maxActiveMin: number | null;
   maxCostLevel: 1 | 2 | 3 | null;
   excludedAllergens: Allergen[];

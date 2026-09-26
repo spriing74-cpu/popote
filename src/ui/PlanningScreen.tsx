@@ -33,6 +33,9 @@ import { stockEntries, stockUrgencyMap } from '../domain/antigaspi';
 import { CATEGORY_EMOJI, Chip, Empty, FreshnessBadge, IconButton, ScreenHeader, Segmented, Sheet, Stepper } from './common';
 import { Icon } from './icons';
 import { MealSheet } from './MealSheet';
+import { BatchSession } from './BatchSession';
+import { batchPlan, formatDuration } from '../domain/batchPlan';
+import type { Day } from '../domain/types';
 import { SwipeRow } from './SwipeRow';
 import { useDialog } from './dialog';
 import { haptic, useLongPress } from './ios';
@@ -311,6 +314,7 @@ function PrepView({ onOpen }: { onOpen: (id: SlotId) => void }) {
   const catalog = useCatalog();
   const dialog = useDialog();
   const plan = state.plan;
+  const [session, setSession] = useState<Day | null>(null);
 
   const groups = useMemo(() => {
     return dayIds(plan)
@@ -345,6 +349,7 @@ function PrepView({ onOpen }: { onOpen: (id: SlotId) => void }) {
 
   return (
     <div className="stack">
+      {session && <BatchSession day={session} onClose={() => setSession(null)} />}
       <p className="muted small">
         Quantités crues totales, restes réservés et portions en plus compris. Refroidissez vite (moins de 2 h), répartissez en boîtes et étiquetez avec le jour.
       </p>
@@ -353,6 +358,18 @@ function PrepView({ onOpen }: { onOpen: (id: SlotId) => void }) {
           <h2 className="day-title">
             Session du {dayName(plan, g.day).toLowerCase()} <span className="muted">{dayDate(plan, g.day)}</span>
           </h2>
+          <button className="session-card" onClick={() => setSession(g.day)}>
+            <span className="tile-icon row-icon">
+              <Icon name="clock" size={18} />
+            </span>
+            <span>
+              <b>Plan minuté de la session</b>
+              <span className="small">
+                ≈ {formatDuration(batchPlan(catalog, plan, state.profiles, g.day, state.equipment).total)} · ordre de lancement, minuteurs, étiquettes
+              </span>
+            </span>
+            <Icon name="chevron" size={18} />
+          </button>
           {g.items.map((it) => {
             const r = catalog.recipes[it.recipeId];
             const cooked = plan.slots[it.sourceSlot].cookedOn;

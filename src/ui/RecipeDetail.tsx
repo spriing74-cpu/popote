@@ -16,6 +16,7 @@ import { RecipeTile } from './RecipeTiles';
 import { AddToWeek } from './AddToWeek';
 import { CookMode } from './CookMode';
 import { useTimers } from './timers';
+import { useDialog } from './dialog';
 
 type Tab = 'ingredients' | 'etapes' | 'infos';
 
@@ -42,6 +43,7 @@ export function RecipeDetail({
   const { state, dispatch } = useStore();
   const catalog = useCatalog();
   const timers = useTimers();
+  const dialog = useDialog();
   const recipe = given ?? (recipeId ? catalog.recipes[recipeId] : undefined);
   const [tab, setTab] = useState<Tab>('ingredients');
   const [servings, setServings] = useState<Servings>({ kind: 'foyer' });
@@ -364,6 +366,22 @@ export function RecipeDetail({
               <span className="muted">Vérifiez toujours les étiquettes.</span>
             </p>
           </div>
+          {inCatalog && /^(vf|mdb|imp)-/.test(recipe.id) && (
+            <button
+              className="btn danger block"
+              onClick={async () => {
+                const used = Object.values(state.plan.slots).some((sl) => sl.recipeId === recipe.id);
+                if (used) {
+                  await dialog.actions({ title: 'Recette prévue cette semaine', message: 'Retirez-la d’abord du planning.', actions: [] });
+                  return;
+                }
+                if (await dialog.confirm({ title: `Supprimer « ${recipe.name} » ?`, message: 'Elle disparaîtra de vos recettes.', confirmLabel: 'Supprimer', destructive: true }))
+                  dispatch({ type: 'removeCustomRecipe', id: recipe.id });
+              }}
+            >
+              <Icon name="trash" size={18} /> Supprimer cette recette
+            </button>
+          )}
         </section>
       )}
 

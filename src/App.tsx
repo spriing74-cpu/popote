@@ -114,6 +114,7 @@ export function App() {
 
   return (
     <div className="app">
+      <div className="status-scrim" aria-hidden />
       {saveError && (
         <div className="banner banner-error" role="alert">
           Sauvegarde locale impossible (stockage plein ou navigation privée). Exportez vos données dans Réglages.

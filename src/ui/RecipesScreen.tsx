@@ -6,11 +6,12 @@ import { todayIso } from '../domain/inventory';
 import { recipeShelves } from '../domain/recipeTools';
 import { effectiveRecipeId, slotIds, slotLabel } from '../domain/week';
 import { useCatalog, useStore } from '../state/store';
-import { CATEGORY_STYLE, COST_LABEL, Chip, Empty, ScreenHeader, Sheet, categoryStyle } from './common';
+import { CATEGORY_STYLE, COST_LABEL, Chip, Empty, IconButton, ScreenHeader, Sheet, categoryStyle } from './common';
 import { RecipeArt, RecipeTile, useRecipeMenu } from './RecipeTiles';
 import { Icon } from './icons';
 import { RecipeDetail } from './RecipeDetail';
 import { ExplorerScreen } from './ExplorerScreen';
+import { ImportRecipe } from './ImportRecipe';
 
 type Filter = 'rapide' | 'boite' | 'vege' | 'eco' | 'congel' | 'favoris';
 type Sort = 'pertinence' | 'rapide' | 'az';
@@ -74,6 +75,7 @@ export function RecipesScreen({ pickFor, onPick }: { pickFor?: SlotId; onPick?: 
   const [onlyAllowed, setOnlyAllowed] = useState(true);
   const [open, setOpen] = useState<string | null>(null);
   const [explorer, setExplorer] = useState(false);
+  const [importing, setImporting] = useState(false);
   const [shelfOpen, setShelfOpen] = useState<string | null>(null);
   const constraint = pickFor ? slotConstraint(state.plan, pickFor, state.profiles) : null;
   const today = todayIso();
@@ -143,7 +145,13 @@ export function RecipesScreen({ pickFor, onPick }: { pickFor?: SlotId; onPick?: 
 
   return (
     <div className="screen">
-      {!pickFor && <ScreenHeader title="Recettes" subtitle={`${Object.keys(catalog.recipes).length} recettes maison, disponibles hors ligne`} />}
+      {!pickFor && (
+        <ScreenHeader
+          title="Recettes"
+          subtitle={`${Object.keys(catalog.recipes).length} recettes, disponibles hors ligne`}
+          actions={<IconButton icon="plus" label="Ajouter une recette (lien, photo, texte)" onClick={() => setImporting(true)} />}
+        />
+      )}
 
       <div className="search-wrap sticky-search">
         <Icon name="search" size={18} />
@@ -274,6 +282,15 @@ export function RecipesScreen({ pickFor, onPick }: { pickFor?: SlotId; onPick?: 
             ))}
           </div>
         </Sheet>
+      )}
+      {importing && (
+        <ImportRecipe
+          onClose={() => setImporting(false)}
+          onSaved={(id) => {
+            setImporting(false);
+            setOpen(id);
+          }}
+        />
       )}
       {explorer && (
         <Sheet title="Recettes du monde" onClose={() => setExplorer(false)}>

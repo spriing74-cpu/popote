@@ -15,6 +15,7 @@ import { todayIso } from '../domain/inventory';
 import { NUTRITION_SOURCE } from '../domain/nutrition';
 import { INSEE_SOURCE } from '../data/referencePrices';
 import { useDialog } from './dialog';
+import { SHORTCUT_NAME, shortcutUrl } from './timers';
 import { isIOS, isStandalone, setBadge } from './ios';
 import { Chip, ListGroup, ListRow, ScreenHeader, Segmented, Sheet, Stepper, Toggle, portionLabel } from './common';
 
@@ -198,6 +199,34 @@ function IphoneGroup() {
       )}
       <Toggle checked={s.haptics} onChange={(v) => dispatch({ type: 'updateSettings', patch: { haptics: v } })} label="Retours haptiques" />
       <Toggle checked={s.appBadge} onChange={toggleBadge} label="Pastille sur l’icône de l’app" />
+      <Toggle
+        checked={s.timerTarget === 'iphone'}
+        onChange={(v) => dispatch({ type: 'updateSettings', patch: { timerTarget: v ? 'iphone' : 'app' } })}
+        label="Minuteurs : utiliser celui de l’iPhone"
+      />
+      {s.timerTarget === 'iphone' && (
+        <div className="list-row" style={{ display: 'block' }}>
+          <p className="small">
+            Popote lance le raccourci <strong>« {SHORTCUT_NAME} »</strong>, qui démarre le minuteur de l’app Horloge : il sonne même écran verrouillé. À créer une fois :
+          </p>
+          <ol className="small" style={{ paddingLeft: 18, margin: '6px 0' }}>
+            <li>App <strong>Raccourcis</strong> › <strong>+</strong> (nouveau raccourci).</li>
+            <li>
+              Ajoutez l’action <strong>Démarrer le minuteur</strong>.
+            </li>
+            <li>
+              Touchez la durée, choisissez la variable <strong>Entrée du raccourci</strong>, unité <strong>minutes</strong>.
+            </li>
+            <li>
+              Nommez le raccourci exactement <strong>{SHORTCUT_NAME}</strong>, puis Terminé.
+            </li>
+          </ol>
+          <p className="small muted">Au lancement, iOS passe un instant par Raccourcis : revenez dans Popote d’un balayage. La première fois, autorisez l’exécution.</p>
+          <a className="btn small" href={shortcutUrl(1)}>
+            Tester (minuteur d’1 minute)
+          </a>
+        </div>
+      )}
     </ListGroup>
   );
 }

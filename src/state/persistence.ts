@@ -1,8 +1,9 @@
-import type { AppState, Catalog, Day, DinerChoice, InventoryItem, ProductInfo, ProfileId, Recipe, RecipeIngredient, Settings, Unit, WeekPlan } from '../domain/types';
+import type { AisleId, AppState, Catalog, Day, DinerChoice, InventoryItem, ProductInfo, ProfileId, Recipe, RecipeIngredient, Settings, Unit, WeekPlan } from '../domain/types';
 import { mergeCatalog } from '../data/catalog';
 import type { Equipment } from '../domain/equipment';
 import { MAX_DAYS, PROFILE_IDS, dayIndex, emptySlot, isSlotId, slotIds, slotIndex, upcomingWeekday } from '../domain/week';
 import { defaultState } from '../data/defaults';
+import { AISLE_ORDER } from '../data/aisles';
 
 export const STORAGE_KEY = 'popote:v1';
 
@@ -66,7 +67,7 @@ const isIsoDate = (d: unknown): d is string => typeof d === 'string' && /^\d{4}-
 
 /** Recette personnelle (vide-frigo « vf- » ou importée « mdb- ») : on ne garde que des données valides et convertibles. */
 function normalizeRecipe(r: Loose, catalog: Catalog): Recipe | null {
-  if (typeof r.id !== 'string' || !/^(vf|mdb)-/.test(r.id) || typeof r.name !== 'string' || !Array.isArray(r.ingredients)) return null;
+  if (typeof r.id !== 'string' || !/^(vf|mdb|imp)-/.test(r.id) || typeof r.name !== 'string' || !Array.isArray(r.ingredients)) return null;
   const ingredients: RecipeIngredient[] = [];
   for (const x of r.ingredients) {
     if (!isObj(x) || typeof x.ingredientId !== 'string' || !catalog.ingredients[x.ingredientId] || !isUnit(x.unit) || typeof x.qty !== 'number' || !(x.qty > 0)) return null;
@@ -160,6 +161,14 @@ export function normalizeState(raw: unknown, baseCatalog: Catalog): AppState {
     showNutrition: typeof s.showNutrition === 'boolean' ? s.showNutrition : true,
     appBadge: s.appBadge === true,
     haptics: s.haptics !== false,
+    timerTarget: s.timerTarget === 'iphone' ? 'iphone' : 'app',
+    aisleOrders: isObj(s.aisleOrders)
+      ? Object.fromEntries(
+          Object.entries(s.aisleOrders)
+            .filter(([k, v]) => ['auchan', 'leclerc', 'lidl', 'autre'].includes(k) && Array.isArray(v))
+            .map(([k, v]) => [k, (v as unknown[]).filter((a): a is AisleId => typeof a === 'string' && (AISLE_ORDER as string[]).includes(a))]),
+        )
+      : {},
     maxActiveMin: typeof s.maxActiveMin === 'number' ? s.maxActiveMin : null,
     maxCostLevel: s.maxCostLevel === 1 || s.maxCostLevel === 2 || s.maxCostLevel === 3 ? s.maxCostLevel : null,
     excludedAllergens: arr(s.excludedAllergens, isStr) as AppState['settings']['excludedAllergens'],

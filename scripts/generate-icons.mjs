@@ -104,7 +104,7 @@ console.log('Icônes générées dans', outDir);
 // iOS n'utilise pas le manifeste pour l'écran de lancement : sans ces images, il affiche un écran blanc.
 const SPLASH_BG = [241, 238, 244];
 const SPLASHES = [
-  [440, 956, 3], [402, 874, 3], [430, 932, 3], [393, 852, 3], [428, 926, 3], [390, 844, 3],
+  [440, 956, 3], [420, 912, 3], [402, 874, 3], [430, 932, 3], [393, 852, 3], [428, 926, 3], [390, 844, 3],
   [414, 896, 3], [375, 812, 3], [414, 896, 2], [375, 667, 2], [320, 568, 2],
 ];
 

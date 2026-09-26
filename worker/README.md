@@ -59,3 +59,10 @@ La recherche se fait **une fois par appareil** : le résultat est gardé dans Po
 ## Fiabilité
 
 Les réglages trouvés viennent de pages web (notices, fiches produits) et sont mis en forme par l'IA : ils peuvent être incomplets ou faux. Popote les affiche comme « IA, à vérifier » avec leurs sources, et ne garde que des sources réellement consultées. **La notice papier de votre appareil fait foi.**
+
+## Lecture des liens de recettes
+
+L’app peut aussi demander au service de lire une page de recette (`GET /recipe?url=…`) : la plupart des sites
+(Marmiton, 750g…) refusent la lecture directe depuis une app web. Le service récupère la page et ne renvoie que
+ses données structurées schema.org, **sans appel à Claude (gratuit)**. Seules les adresses https publiques sont
+acceptées. Après une mise à jour du dépôt, redéployez : `npx wrangler deploy`.
