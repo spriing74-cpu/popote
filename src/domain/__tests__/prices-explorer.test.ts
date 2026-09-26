@@ -18,7 +18,7 @@ const TODAY = '2026-09-26';
 
 function listFor(recipeId: string) {
   let s = defaultState();
-  s = reducer(CATALOG)(s, { type: 'setRecipe', slot: 'sam-diner', recipeId });
+  s = reducer(CATALOG)(s, { type: 'setRecipe', slot: 'd0-diner', recipeId });
   return buildShoppingList(planConsumption(CATALOG, s.plan, s.profiles), CATALOG, s.pantry, []).items;
 }
 
@@ -178,7 +178,7 @@ describe('TheMealDB', () => {
     let s = defaultState();
     const reduce = reducer(CATALOG);
     s = reduce(s, { type: 'keepRecipe', recipe: r });
-    s = reduce(s, { type: 'setRecipe', slot: 'lun-diner', recipeId: r.id });
-    expect(s.plan.slots['lun-diner'].recipeId).toBe('mdb-52904');
+    s = reduce(s, { type: 'setRecipe', slot: 'd2-diner', recipeId: r.id });
+    expect(s.plan.slots['d2-diner'].recipeId).toBe('mdb-52904');
   });
 });

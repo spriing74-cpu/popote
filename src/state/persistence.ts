@@ -1,7 +1,7 @@
-import type { AppState, Catalog, DinerChoice, InventoryItem, ProductInfo, ProfileId, Recipe, RecipeIngredient, Settings, Slot, SlotId, Unit } from '../domain/types';
+import type { AppState, Catalog, Day, DinerChoice, InventoryItem, ProductInfo, ProfileId, Recipe, RecipeIngredient, Settings, Unit, WeekPlan } from '../domain/types';
 import { mergeCatalog } from '../data/catalog';
 import type { Equipment } from '../domain/equipment';
-import { DAYS, PROFILE_IDS, SLOT_IDS, emptySlot, slotIndex } from '../domain/week';
+import { MAX_DAYS, PROFILE_IDS, dayIndex, emptySlot, isSlotId, slotIds, slotIndex, upcomingWeekday } from '../domain/week';
 import { defaultState } from '../data/defaults';
 
 export const STORAGE_KEY = 'popote:v1';
@@ -104,6 +104,11 @@ function normalizeRecipe(r: Loose, catalog: Catalog): Recipe | null {
   };
 }
 
+const LEGACY_ORDER = ['sam', 'dim', 'lun', 'mar', 'mer'];
+const LEGACY_WEEKDAY: Record<string, number> = { dim: 0, lun: 1, mar: 2, mer: 3, jeu: 4, ven: 5, sam: 6 };
+const isWeekday = (v: unknown): v is number => typeof v === 'number' && Number.isInteger(v) && v >= 0 && v <= 6;
+const weekdays = (v: unknown[]): number[] => [...new Set(v.filter(isWeekday))].sort((a, b) => a - b);
+
 export function normalizeState(raw: unknown, baseCatalog: Catalog): AppState {
   const base = defaultState();
   if (!isObj(raw)) return base;
@@ -130,6 +135,7 @@ export function normalizeState(raw: unknown, baseCatalog: Catalog): AppState {
           sauce: num(f.sauce, d.factors.sauce),
         },
         lunchPlace: p.lunchPlace === 'chantier' || p.lunchPlace === 'travail' || p.lunchPlace === 'maison' ? p.lunchPlace : d.lunchPlace,
+        workWeekdays: Array.isArray(p.workWeekdays) ? weekdays(p.workWeekdays) : d.workWeekdays,
         microwaveAtLunch: typeof p.microwaveAtLunch === 'boolean' ? p.microwaveAtLunch : d.microwaveAtLunch,
         defaultLunchExtras: arr(p.defaultLunchExtras, isStr).filter((s) => catalog.sides[s]),
         defaultDinnerExtras: arr(p.defaultDinnerExtras, isStr).filter((s) => catalog.sides[s]),
@@ -141,7 +147,17 @@ export function normalizeState(raw: unknown, baseCatalog: Catalog): AppState {
   const s = isObj(raw.settings) ? raw.settings : {};
   const settings: Settings = {
     ...base.settings,
-    prepDays: arr(s.prepDays, isStr).filter((d): d is (typeof DAYS)[number] => (DAYS as string[]).includes(d)),
+    // Ancien format : jours nommés « sam », « dim »…
+    prepWeekdays: Array.isArray(s.prepWeekdays)
+      ? weekdays(s.prepWeekdays)
+      : Array.isArray(s.prepDays)
+        ? weekdays(arr(s.prepDays, isStr).map((d) => LEGACY_WEEKDAY[d]))
+        : base.settings.prepWeekdays,
+    startWeekday: isWeekday(s.startWeekday) ? s.startWeekday : base.settings.startWeekday,
+    planDays: typeof s.planDays === 'number' && s.planDays >= 1 && s.planDays <= MAX_DAYS ? Math.round(s.planDays) : base.settings.planDays,
+    theme: s.theme === 'nothing' || s.theme === 'glass' ? s.theme : base.settings.theme,
+    colorScheme: s.colorScheme === 'light' || s.colorScheme === 'dark' ? s.colorScheme : 'auto',
+    showNutrition: typeof s.showNutrition === 'boolean' ? s.showNutrition : true,
     maxActiveMin: typeof s.maxActiveMin === 'number' ? s.maxActiveMin : null,
     maxCostLevel: s.maxCostLevel === 1 || s.maxCostLevel === 2 || s.maxCostLevel === 3 ? s.maxCostLevel : null,
     excludedAllergens: arr(s.excludedAllergens, isStr) as AppState['settings']['excludedAllergens'],
@@ -154,13 +170,46 @@ export function normalizeState(raw: unknown, baseCatalog: Catalog): AppState {
     deductInventory: typeof s.deductInventory === 'boolean' ? s.deductInventory : true,
     aiServiceUrl: typeof s.aiServiceUrl === 'string' && /^https:\/\//.test(s.aiServiceUrl) ? s.aiServiceUrl : '',
   };
-  if (!isObj(raw.settings) || !Array.isArray(s.prepDays)) settings.prepDays = base.settings.prepDays;
 
   const rawPlan = isObj(raw.plan) ? raw.plan : {};
-  const rawSlots = isObj(rawPlan.slots) ? rawPlan.slots : {};
-  const slots = {} as Record<SlotId, Slot>;
-  for (const id of SLOT_IDS) {
-    const def = emptySlot(id, profiles, settings.prepDays);
+  let rawSlots: Loose = isObj(rawPlan.slots) ? rawPlan.slots : {};
+  let days = typeof rawPlan.days === 'number' && rawPlan.days >= 1 && rawPlan.days <= MAX_DAYS ? Math.round(rawPlan.days) : null;
+  let weekOf = isIsoDate(rawPlan.weekOf) ? rawPlan.weekOf : null;
+  const legacy = days === null && Object.keys(rawSlots).some((k) => /^(sam|dim|lun|mar|mer)-/.test(k));
+  const legacyEmpty = legacy && !Object.values(rawSlots).some((v) => isObj(v) && (typeof v.recipeId === 'string' || typeof v.leftoverOf === 'string'));
+  if (legacyEmpty) {
+    // Ancien planning vide : on repart directement sur la nouvelle semaine (dimanche → dimanche par défaut).
+    rawSlots = {};
+    weekOf = null;
+  } else if (legacy) {
+    // Ancien planning fixe « samedi → mercredi » : sam = premier jour, et ainsi de suite.
+    days = 5;
+    rawSlots = Object.fromEntries(
+      Object.entries(rawSlots).flatMap(([k, v]) => {
+        const [d, m] = k.split('-');
+        const i = LEGACY_ORDER.indexOf(d);
+        if (i < 0) return [];
+        const conv = isObj(v) ? { ...v } : v;
+        if (isObj(conv)) {
+          if (typeof conv.leftoverOf === 'string') {
+            const [ld, lm] = conv.leftoverOf.split('-');
+            conv.leftoverOf = LEGACY_ORDER.includes(ld) ? `d${LEGACY_ORDER.indexOf(ld)}-${lm}` : null;
+          }
+          if (typeof conv.prepDay === 'string') conv.prepDay = LEGACY_ORDER.includes(conv.prepDay) ? `d${LEGACY_ORDER.indexOf(conv.prepDay)}` : null;
+        }
+        return [[`d${i}-${m}`, conv]];
+      }),
+    );
+  }
+  const plan: WeekPlan = {
+    weekOf: weekOf ?? upcomingWeekday(settings.startWeekday),
+    days: days ?? settings.planDays,
+    slots: {},
+  };
+  const slots = plan.slots;
+  const ids = slotIds(plan);
+  for (const id of ids) {
+    const def = emptySlot(plan, id, profiles, settings.prepWeekdays);
     const r = rawSlots[id];
     if (!isObj(r)) {
       slots[id] = def;
@@ -179,11 +228,12 @@ export function normalizeState(raw: unknown, baseCatalog: Catalog): AppState {
         : def.diners[p];
     }
     const recipeId = typeof r.recipeId === 'string' && catalog.recipes[r.recipeId] ? r.recipeId : null;
-    const leftoverOf = typeof r.leftoverOf === 'string' && (SLOT_IDS as string[]).includes(r.leftoverOf) ? (r.leftoverOf as SlotId) : null;
+    const leftoverOf = isSlotId(r.leftoverOf) && ids.includes(r.leftoverOf) ? r.leftoverOf : null;
     slots[id] = {
       recipeId: leftoverOf ? null : recipeId,
       leftoverOf,
-      prepDay: typeof r.prepDay === 'string' && (DAYS as string[]).includes(r.prepDay) ? (r.prepDay as Slot['prepDay']) : def.prepDay,
+      prepDay:
+        typeof r.prepDay === 'string' && /^d\d{1,2}$/.test(r.prepDay) && dayIndex(r.prepDay as Day) < plan.days ? (r.prepDay as Day) : def.prepDay,
       extraPortions: Math.max(0, Math.round(num(r.extraPortions, 0))),
       diners,
       note: str(r.note, ''),
@@ -191,7 +241,7 @@ export function normalizeState(raw: unknown, baseCatalog: Catalog): AppState {
     };
   }
   // Restes incohérents (source absente, source elle-même en restes, source postérieure) : on les détache.
-  for (const id of SLOT_IDS) {
+  for (const id of ids) {
     const src = slots[id].leftoverOf;
     if (src && (!slots[src].recipeId || slots[src].leftoverOf || slotIndex(src) >= slotIndex(id))) {
       slots[id] = { ...slots[id], leftoverOf: null };
@@ -241,7 +291,7 @@ export function normalizeState(raw: unknown, baseCatalog: Catalog): AppState {
     version: 1,
     profiles,
     settings,
-    plan: { weekOf: typeof rawPlan.weekOf === 'string' ? rawPlan.weekOf : null, slots },
+    plan,
     pantry,
     manualItems,
     checked,

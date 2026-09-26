@@ -1,5 +1,5 @@
 import type { Catalog, MealKind, Profile, ProfileId, Recipe, Settings, Slot, SlotId, WeekPlan } from './types';
-import { PROFILE_IDS, SLOT_IDS, dayIndex, effectiveRecipeId, leftoverTargets, parseSlotId, presentProfiles } from './week';
+import { PROFILE_IDS, dayIndex, effectiveRecipeId, leftoverTargets, parseSlotId, presentProfiles, slotIds, weekdayOf } from './week';
 import { checkFreshness } from './freshness';
 
 type Profiles = Record<ProfileId, Profile>;
@@ -28,18 +28,28 @@ export function recipeAllowed(recipe: Recipe, settings: Settings, catalog: Catal
   return true;
 }
 
+/** Ce profil déjeune-t-il hors de la maison ce jour-là (jour travaillé) ? */
+export function lunchAway(profile: Profile, weekday: number): boolean {
+  return profile.lunchPlace !== 'maison' && profile.workWeekdays.includes(weekday);
+}
+
 /** Le déjeuner doit-il être une boîte transportable (et mangeable froid si pas de micro-ondes) ? */
-export function lunchConstraint(slot: Slot, meal: MealKind, profiles: Profiles): 'aucune' | 'boite' | 'boite_froide' {
+export function lunchConstraint(slot: Slot, meal: MealKind, profiles: Profiles, weekday: number): 'aucune' | 'boite' | 'boite_froide' {
   if (meal !== 'dejeuner') return 'aucune';
-  const away = presentProfiles(slot).filter((p) => profiles[p].lunchPlace !== 'maison');
+  const away = presentProfiles(slot).filter((p) => lunchAway(profiles[p], weekday));
   if (away.length === 0) return 'aucune';
   if (away.some((p) => !profiles[p].microwaveAtLunch)) return 'boite_froide';
   return 'boite';
 }
 
-export function recipeFitsSlot(recipe: Recipe, id: SlotId, slot: Slot, profiles: Profiles): boolean {
+export function slotConstraint(plan: WeekPlan, id: SlotId, profiles: Profiles, slot: Slot = plan.slots[id]) {
+  const { day, meal } = parseSlotId(id);
+  return lunchConstraint(slot, meal, profiles, weekdayOf(plan, day));
+}
+
+export function recipeFitsSlot(recipe: Recipe, plan: WeekPlan, id: SlotId, profiles: Profiles, slot: Slot = plan.slots[id]): boolean {
   const { meal } = parseSlotId(id);
-  const c = lunchConstraint(slot, meal, profiles);
+  const c = slotConstraint(plan, id, profiles, slot);
   if (c === 'aucune') return recipe.meals.includes(meal);
   if (!recipe.lunchbox) return false;
   if (c === 'boite_froide' && recipe.temperature === 'chaud') return false;
@@ -132,13 +142,14 @@ export function suggestPlan(
 ): WeekPlan {
   const random = rng(opts.seed);
   const slots = { ...plan.slots };
-  if (!opts.onlyEmpty) for (const id of SLOT_IDS) slots[id] = clearRecipe(slots[id]);
+  const ids = slotIds(plan);
+  if (!opts.onlyEmpty) for (const id of ids) slots[id] = clearRecipe(slots[id]);
   const next: WeekPlan = { ...plan, slots };
 
   const recipeUse = new Map<string, number>();
   const mainUse = new Map<string, number>();
   const bump = (m: Map<string, number>, k: string) => m.set(k, (m.get(k) ?? 0) + 1);
-  for (const id of SLOT_IDS) {
+  for (const id of ids) {
     const r = effectiveRecipeId(next, id);
     if (r && catalog.recipes[r] && !slots[id].leftoverOf) {
       bump(recipeUse, r);
@@ -147,11 +158,12 @@ export function suggestPlan(
   }
 
   const all = Object.values(catalog.recipes).filter((r) => recipeAllowed(r, settings, catalog));
-  let leftoversUsed = SLOT_IDS.filter((id) => slots[id].leftoverOf).length;
+  let leftoversUsed = ids.filter((id) => slots[id].leftoverOf).length;
+  const maxLeftovers = Math.max(2, Math.round(plan.days / 2.5));
   let previousMain: string | null = null;
 
-  for (let i = 0; i < SLOT_IDS.length; i++) {
-    const id = SLOT_IDS[i];
+  for (let i = 0; i < ids.length; i++) {
+    const id = ids[i];
     const slot = slots[id];
     const existing = effectiveRecipeId(next, id);
     if (existing) {
@@ -162,15 +174,15 @@ export function suggestPlan(
     const { meal, day } = parseSlotId(id);
 
     // 1) Restes du dîner de la veille pour un déjeuner, si pertinent.
-    if (settings.useLeftoversInSuggestions && meal === 'dejeuner' && i > 0 && leftoversUsed < 2) {
-      const prevId = SLOT_IDS[i - 1];
+    if (settings.useLeftoversInSuggestions && meal === 'dejeuner' && i > 0 && leftoversUsed < maxLeftovers) {
+      const prevId = ids[i - 1];
       const prev = slots[prevId];
       const prevRecipe = prev.recipeId ? catalog.recipes[prev.recipeId] : null;
       if (
         prevRecipe &&
         !prev.leftoverOf &&
         prevRecipe.leftoverFriendly &&
-        recipeFitsSlot(prevRecipe, id, slot, profiles) &&
+        recipeFitsSlot(prevRecipe, next, id, profiles, slot) &&
         leftoverTargets(next, prevId).length === 0 &&
         random() < 0.6
       ) {
@@ -186,7 +198,7 @@ export function suggestPlan(
     }
 
     // 2) Choix d'une recette par score (plus petit = meilleur).
-    const candidates = all.filter((r) => recipeFitsSlot(r, id, slot, profiles));
+    const candidates = all.filter((r) => recipeFitsSlot(r, next, id, profiles, slot));
     if (candidates.length === 0) continue;
     let best: Recipe | null = null;
     let bestScore = Infinity;

@@ -111,7 +111,7 @@ export interface CookingHints {
 export function cookingHints(recipe: Recipe): CookingHints {
   const text = recipe.steps.join(' ');
   // Températures du four : on ignore les passages qui parlent de l'airfryer (« ou 12 min à l'airfryer à 190 °C »).
-  const ovenParts = text.split(/[.;()]|ou/).filter((part) => !/airfryer/i.test(part));
+  const ovenParts = text.split(/[.;()]|\bou\b/).filter((part) => !/airfryer/i.test(part));
   const ovenTemps = ovenParts
     .flatMap((part) => [...part.matchAll(/(\d{3})\s*°\s*C/g)].map((m) => +m[1]))
     .filter((t) => t >= 100 && t <= 300);

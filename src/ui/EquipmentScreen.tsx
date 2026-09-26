@@ -6,14 +6,12 @@ import { AiServiceError, fetchApplianceSettings, identifyAppliance } from '../sc
 import { useStore } from '../state/store';
 import { Chip, Sheet, Toggle, uid } from './common';
 
-/** Carte « Ma cuisine » des Réglages : liste des équipements et configuration du service IA. */
+/** « Ma cuisine » : liste des équipements. */
 export function EquipmentCard() {
-  const { state, dispatch } = useStore();
+  const { state } = useStore();
   const [editing, setEditing] = useState<Equipment | null>(null);
-  const [url, setUrl] = useState(state.settings.aiServiceUrl);
   return (
     <section className="card">
-      <h3>Ma cuisine</h3>
       <p className="muted small">Déclarez vos appareils : chaque recette affiche ensuite les réglages adaptés (chaleur tournante, airfryer, micro-ondes, autocuiseur).</p>
       <ul className="plain">
         {state.equipment.map((e) => (
@@ -31,7 +29,18 @@ export function EquipmentCard() {
       >
         + Ajouter un appareil
       </button>
-      <div className="field">
+      {editing && <EquipmentSheet initial={editing} onClose={() => setEditing(null)} />}
+    </section>
+  );
+}
+
+/** Adresse du service IA personnel (Cloudflare Worker). */
+export function AiServiceCard() {
+  const { state, dispatch } = useStore();
+  const [url, setUrl] = useState(state.settings.aiServiceUrl);
+  return (
+    <section className="card">
+      <div className="field" style={{ marginTop: 0 }}>
         <span>Service IA personnel (facultatif)</span>
         <p className="muted small">
           Adresse de votre Cloudflare Worker (voir le guide « worker/README.md » du projet). Il garde votre clé Anthropic ; chaque reconnaissance ou recherche est facturée sur votre compte Anthropic.
@@ -48,7 +57,6 @@ export function EquipmentCard() {
         </div>
         {state.settings.aiServiceUrl ? <p className="note ok small">✓ IA activée.</p> : <p className="muted small">IA désactivée : tout le reste fonctionne sans.</p>}
       </div>
-      {editing && <EquipmentSheet initial={editing} onClose={() => setEditing(null)} />}
     </section>
   );
 }

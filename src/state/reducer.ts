@@ -16,7 +16,7 @@ import type {
   SlotId,
   WeekPlan,
 } from '../domain/types';
-import { SLOT_IDS, defaultPrepDay, emptyPlan, leftoverTargets, parseSlotId, slotIndex } from '../domain/week';
+import { defaultPrepDay, emptyPlan, leftoverTargets, parseSlotId, resizePlan, slotIds, slotIndex } from '../domain/week';
 import { withLeftover, withRecipe } from '../domain/planner';
 import { defaultState } from '../data/defaults';
 import { mergeCatalog } from '../data/catalog';
@@ -32,8 +32,9 @@ export type Action =
   | { type: 'setSlot'; slot: SlotId; patch: Partial<Pick<Slot, 'prepDay' | 'extraPortions' | 'note'>> }
   | { type: 'clearSlot'; slot: SlotId }
   | { type: 'setPlan'; plan: WeekPlan }
-  | { type: 'newWeek'; weekOf: string | null }
-  | { type: 'setWeekOf'; weekOf: string | null }
+  | { type: 'newWeek'; weekOf: string; days?: number }
+  | { type: 'setWeekOf'; weekOf: string }
+  | { type: 'setPlanDays'; days: number }
   | { type: 'applyPrepDays' }
   | { type: 'updateProfile'; profile: ProfileId; patch: Partial<Profile> }
   | { type: 'updateSettings'; patch: Partial<Settings> }
@@ -73,10 +74,18 @@ function detachTargets(slots: Record<SlotId, Slot>, plan: WeekPlan, source: Slot
   for (const t of leftoverTargets(plan, source)) slots[t] = { ...withRecipe(slots[t], null) };
 }
 
+function withDefaultPrepDays(plan: WeekPlan, prepWeekdays: number[]): WeekPlan {
+  const slots = { ...plan.slots };
+  for (const id of slotIds(plan)) slots[id] = { ...slots[id], prepDay: defaultPrepDay(plan, parseSlotId(id).day, prepWeekdays) };
+  return { ...plan, slots };
+}
+
 export function reducer(baseCatalog: Catalog) {
   return function reduce(state: AppState, action: Action): AppState {
     const catalog = mergeCatalog(baseCatalog, state.customRecipes);
     const plan = state.plan;
+    // Créneau inexistant (planning raccourci entre-temps) : rien à faire.
+    if ('slot' in action && !plan.slots[action.slot]) return state;
     switch (action.type) {
       case 'setRecipe': {
         const slots = { ...plan.slots };
@@ -135,19 +144,20 @@ export function reducer(baseCatalog: Catalog) {
         return { ...state, plan: action.plan };
       case 'newWeek': {
         // La semaine qui se termine rejoint l'historique (pour varier les suggestions suivantes).
-        const eaten = [...new Set(SLOT_IDS.map((id) => plan.slots[id].leftoverOf ? null : plan.slots[id].recipeId).filter((r): r is string => !!r))];
+        const eaten = [...new Set(slotIds(plan).map((id) => (plan.slots[id].leftoverOf ? null : plan.slots[id].recipeId)).filter((r): r is string => !!r))];
         const history = eaten.length ? [{ weekOf: plan.weekOf, recipeIds: eaten }, ...state.history].slice(0, 8) : state.history;
-        return { ...state, history, plan: emptyPlan(state.profiles, state.settings.prepDays, action.weekOf), checked: {} };
+        const days = action.days ?? state.settings.planDays;
+        return { ...state, history, plan: emptyPlan(state.profiles, state.settings.prepWeekdays, action.weekOf, days), checked: {} };
       }
-      case 'setWeekOf':
-        return { ...state, plan: { ...plan, weekOf: action.weekOf } };
-      case 'applyPrepDays': {
-        const slots = { ...plan.slots };
-        for (const id of SLOT_IDS) {
-          slots[id] = { ...slots[id], prepDay: defaultPrepDay(parseSlotId(id).day, state.settings.prepDays) };
-        }
-        return setSlots(state, slots);
+      case 'setWeekOf': {
+        // Les repas gardent leur position ; les jours de préparation suivent les nouveaux jours de la semaine.
+        const moved: WeekPlan = { ...plan, weekOf: action.weekOf };
+        return { ...state, plan: withDefaultPrepDays(moved, state.settings.prepWeekdays) };
       }
+      case 'setPlanDays':
+        return { ...state, plan: resizePlan(plan, Math.max(1, Math.min(14, Math.round(action.days))), state.profiles, state.settings.prepWeekdays) };
+      case 'applyPrepDays':
+        return { ...state, plan: withDefaultPrepDays(plan, state.settings.prepWeekdays) };
       case 'updateProfile':
         return { ...state, profiles: { ...state.profiles, [action.profile]: { ...state.profiles[action.profile], ...action.patch } } };
       case 'updateSettings':
@@ -211,7 +221,7 @@ export function reducer(baseCatalog: Catalog) {
         if (state.customRecipes.some((r) => r.id === action.recipe.id)) return state;
         return { ...state, customRecipes: [...state.customRecipes, action.recipe] };
       case 'removeCustomRecipe': {
-        const inUse = SLOT_IDS.some((id) => plan.slots[id].recipeId === action.id);
+        const inUse = slotIds(plan).some((id) => plan.slots[id].recipeId === action.id);
         if (inUse) return state;
         return { ...state, customRecipes: state.customRecipes.filter((r) => r.id !== action.id), favorites: state.favorites.filter((f) => f !== action.id) };
       }

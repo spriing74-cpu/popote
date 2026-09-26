@@ -17,14 +17,14 @@ export default defineConfig({
       manifest: {
         name: 'Popote — repas & courses',
         short_name: 'Popote',
-        description: 'Planning des repas du samedi au mercredi et liste de courses pour deux.',
+        description: 'Planning des repas de la semaine, frigo anti-gaspi et liste de courses pour deux.',
         lang: 'fr',
         start_url: '.',
         scope: '.',
         display: 'standalone',
         orientation: 'portrait',
-        background_color: '#f7f3ee',
-        theme_color: '#1f4e5f',
+        background_color: '#f3f1f5',
+        theme_color: '#f3f1f5',
         icons: [
           { src: 'icons/icon-192.png', sizes: '192x192', type: 'image/png' },
           { src: 'icons/icon-512.png', sizes: '512x512', type: 'image/png' },
@@ -32,16 +32,22 @@ export default defineConfig({
         ],
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,png,svg,webmanifest}'],
+        globPatterns: ['**/*.{js,css,html,png,svg,webmanifest,woff,woff2}'],
         // Les moteurs de scan (plusieurs Mo) ne sont pas pré-téléchargés :
         // ils sont mis en cache à la première utilisation, puis disponibles hors ligne.
-        globIgnores: ['scan/**'],
+        // Idem pour le lecteur de PDF (tickets en ligne).
+        globIgnores: ['scan/**', 'assets/pdf*'],
         navigateFallback: 'index.html',
         runtimeCaching: [
           {
             urlPattern: ({ url }) => url.pathname.includes('/scan/'),
             handler: 'CacheFirst',
             options: { cacheName: 'popote-scan', expiration: { maxEntries: 20 } },
+          },
+          {
+            urlPattern: ({ url }) => /\/assets\/pdf/.test(url.pathname),
+            handler: 'CacheFirst',
+            options: { cacheName: 'popote-pdf', expiration: { maxEntries: 6 } },
           },
         ],
       },

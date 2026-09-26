@@ -3,6 +3,8 @@ import { createRoot } from 'react-dom/client';
 import { registerSW } from 'virtual:pwa-register';
 import { StoreProvider } from './state/store';
 import { App } from './App';
+// Police « matrice de points » du thème Nothing (auto-hébergée, disponible hors ligne).
+import '@fontsource/doto/latin-900.css';
 import './styles.css';
 
 // Service worker : met l'application en cache pour un usage hors ligne.

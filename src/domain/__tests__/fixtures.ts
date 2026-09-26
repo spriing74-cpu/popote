@@ -105,6 +105,7 @@ export function testProfiles(): Record<ProfileId, Profile> {
       name: 'Moi',
       factors: { portion: 1, feculent: 0.8, legume: 1.5, proteine: 1.2, sauce: 0.5 },
       lunchPlace: 'chantier',
+      workWeekdays: [6, 0, 1, 2, 3],
       microwaveAtLunch: false,
       defaultLunchExtras: [],
       defaultDinnerExtras: [],
@@ -115,6 +116,7 @@ export function testProfiles(): Record<ProfileId, Profile> {
       name: 'Compagne',
       factors: { portion: 1, feculent: 1, legume: 1, proteine: 1, sauce: 1 },
       lunchPlace: 'travail',
+      workWeekdays: [6, 0, 1, 2, 3],
       microwaveAtLunch: true,
       defaultLunchExtras: [],
       defaultDinnerExtras: [],
@@ -124,5 +126,6 @@ export function testProfiles(): Record<ProfileId, Profile> {
 }
 
 export function testPlan() {
-  return emptyPlan(testProfiles(), ['sam', 'dim']);
+  // Planning de 5 jours commençant un samedi, batch le samedi et le dimanche.
+  return emptyPlan(testProfiles(), [6, 0], '2026-10-03', 5);
 }

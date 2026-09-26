@@ -6,35 +6,47 @@ import { cookingPlanFor, dinerConsumption } from '../domain/portions';
 import { aggregate } from '../domain/shopping';
 import { formatQty } from '../domain/units';
 import {
-  DAYS,
-  DAY_LABELS,
+  MAX_DAYS,
   MEALS,
   MEAL_LABELS,
   PROFILE_IDS,
-  SLOT_IDS,
-  dateForDay,
+  WEEKDAY_LABELS,
+  WEEKDAY_SHORT,
+  addDays,
+  dateOf,
+  dayDate,
+  dayIds,
+  dayName,
   effectiveRecipeId,
   leftoverTargets,
+  planRange,
   presentProfiles,
   slotId,
+  slotIds,
   slotLabel,
-  upcomingSaturday,
+  upcomingWeekday,
+  weekdayOf,
 } from '../domain/week';
 import { useCatalog, useStore } from '../state/store';
 import { todayIso } from '../domain/inventory';
 import { stockEntries, stockUrgencyMap } from '../domain/antigaspi';
-import { FreshnessBadge } from './common';
-import { SlotEditor } from './SlotEditor';
+import { CATEGORY_EMOJI, Chip, Empty, FreshnessBadge, IconButton, ScreenHeader, Segmented, Sheet, Stepper } from './common';
+import { Icon } from './icons';
+import { MealSheet } from './MealSheet';
+import type { Tab } from '../App';
 
 type View = 'repas' | 'preparation';
 
-export function PlanningScreen({ goTo }: { goTo: (t: 'courses') => void }) {
+export function PlanningScreen({ goTo }: { goTo: (t: Tab) => void }) {
   const { state, dispatch } = useStore();
   const catalog = useCatalog();
   const [view, setView] = useState<View>('repas');
-  const [editing, setEditing] = useState<SlotId | null>(null);
+  const [open, setOpen] = useState<SlotId | null>(null);
+  const [weekSheet, setWeekSheet] = useState(false);
   const plan = state.plan;
-  const filled = SLOT_IDS.filter((id) => effectiveRecipeId(plan, id)).length;
+  const ids = slotIds(plan);
+  const filled = ids.filter((id) => effectiveRecipeId(plan, id)).length;
+  const today = todayIso();
 
   const suggest = (onlyEmpty: boolean) => {
     if (!onlyEmpty && filled > 0 && !confirm('Reproposer tous les repas ? Vos choix actuels seront remplacés (les convives sont conservés).')) return;
@@ -47,71 +59,92 @@ export function PlanningScreen({ goTo }: { goTo: (t: 'courses') => void }) {
     dispatch({ type: 'setPlan', plan: suggestPlan(catalog, plan, state.profiles, state.settings, state.favorites, { seed, onlyEmpty, learning }) });
   };
 
-  const newWeek = () => {
-    if (!confirm('Commencer une nouvelle semaine ? Le planning et les cases cochées seront vidés (placard, prix et réglages conservés).')) return;
-    dispatch({ type: 'newWeek', weekOf: upcomingSaturday() });
-  };
+  const jump = (d: string) => document.getElementById(`day-${d}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
   return (
     <div className="screen">
-      <h1>Planning</h1>
-      <div className="row gap wrap align-center">
-        <label className="field-inline grow">
-          <span>Samedi</span>
-          <input type="date" value={plan.weekOf ?? ''} onChange={(e) => dispatch({ type: 'setWeekOf', weekOf: e.target.value || null })} />
-        </label>
-      </div>
-      <div className="row gap wrap">
-        <button className="btn primary" onClick={() => suggest(true)} disabled={filled === 10}>
-          ✨ Compléter les cases vides
-        </button>
-        <button className="btn" onClick={() => suggest(false)}>
-          🔄 Tout reproposer
-        </button>
-        <button className="btn" onClick={newWeek}>
-          Nouvelle semaine
-        </button>
-      </div>
-      <p className="muted small">
-        {filled}/10 repas choisis. Les suggestions varient d’une semaine à l’autre, privilégient ce que vous aimez et ce qui périme dans le frigo, et respectent la boîte froide du midi, la conservation et vos exclusions. Tout reste modifiable.
-      </p>
+      <ScreenHeader
+        title="Semaine"
+        subtitle={`${planRange(plan)} · ${plan.days} jour${plan.days > 1 ? 's' : ''}`}
+        actions={<IconButton icon="sliders" label="Dates et durée" onClick={() => setWeekSheet(true)} />}
+      />
 
-      <div className="segmented" role="tablist">
-        <button role="tab" aria-selected={view === 'repas'} className={view === 'repas' ? 'active' : ''} onClick={() => setView('repas')}>
-          Repas
-        </button>
-        <button role="tab" aria-selected={view === 'preparation'} className={view === 'preparation' ? 'active' : ''} onClick={() => setView('preparation')}>
-          Préparation (batch)
-        </button>
+      <div className="week-bar">
+        <div className="progress" aria-hidden>
+          <span style={{ width: `${(filled / ids.length) * 100}%` }} />
+        </div>
+        <span className="progress-label">
+          {filled}/{ids.length} repas
+        </span>
       </div>
+
+      <div className="action-row">
+        <button className="btn primary" onClick={() => suggest(true)} disabled={filled === ids.length}>
+          <Icon name="sparkles" size={18} /> {filled === 0 ? 'Proposer la semaine' : 'Compléter'}
+        </button>
+        {filled > 0 && (
+          <button className="btn" onClick={() => suggest(false)}>
+            <Icon name="refresh" size={18} /> Tout refaire
+          </button>
+        )}
+      </div>
+
+      <Segmented
+        value={view}
+        onChange={setView}
+        options={[
+          { id: 'repas', label: 'Repas' },
+          { id: 'preparation', label: 'Batch cooking' },
+        ]}
+      />
 
       {view === 'repas' ? (
-        <div className="stack">
-          {DAYS.map((d) => (
-            <section key={d} className="day">
-              <h2 className="day-title">
-                {DAY_LABELS[d]} <span className="muted">{dateForDay(plan.weekOf, d) ?? ''}</span>
-              </h2>
-              {MEALS.map((m) => {
-                const id = slotId(d, m);
-                return <SlotRow key={id} id={id} label={MEAL_LABELS[m]} onOpen={() => setEditing(id)} />;
-              })}
-            </section>
-          ))}
-          <button className="btn primary block" onClick={() => goTo('courses')}>
-            Voir la liste de courses →
-          </button>
-        </div>
+        <>
+          <nav className="day-strip" aria-label="Aller au jour">
+            {dayIds(plan).map((d) => {
+              const iso = dateOf(plan, d);
+              return (
+                <button key={d} className={iso === today ? 'day-pill glass today' : 'day-pill glass'} onClick={() => jump(d)}>
+                  <span className="dp-wd">{WEEKDAY_SHORT[weekdayOf(plan, d)]}</span>
+                  <span className="dp-num">{Number(iso.slice(8))}</span>
+                  <span className="dp-dots">
+                    {MEALS.map((m) => (
+                      <i key={m} className={effectiveRecipeId(plan, slotId(d, m)) ? 'on' : ''} />
+                    ))}
+                  </span>
+                </button>
+              );
+            })}
+          </nav>
+          <div className="stack">
+            {dayIds(plan).map((d) => (
+              <section key={d} id={`day-${d}`} className="day">
+                <h2 className="day-title">
+                  {dayName(plan, d)} <span className="muted">{dayDate(plan, d)}</span>
+                  {dateOf(plan, d) === today && <span className="badge accent">Aujourd’hui</span>}
+                </h2>
+                {MEALS.map((m) => {
+                  const id = slotId(d, m);
+                  return <SlotRow key={id} id={id} onOpen={() => setOpen(id)} />;
+                })}
+              </section>
+            ))}
+            <button className="btn block" onClick={() => goTo('courses')}>
+              <Icon name="cart" size={18} /> Voir la liste de courses
+            </button>
+          </div>
+        </>
       ) : (
-        <PrepView onOpen={setEditing} />
+        <PrepView onOpen={setOpen} />
       )}
 
-      {editing && <SlotEditor id={editing} onClose={() => setEditing(null)} />}
+      {open && <MealSheet id={open} onClose={() => setOpen(null)} />}
+      {weekSheet && <WeekSheet onClose={() => setWeekSheet(false)} />}
     </div>
   );
 }
 
-function SlotRow({ id, label, onOpen }: { id: SlotId; label: string; onOpen: () => void }) {
+function SlotRow({ id, onOpen }: { id: SlotId; onOpen: () => void }) {
   const { state } = useStore();
   const catalog = useCatalog();
   const plan = state.plan;
@@ -126,27 +159,97 @@ function SlotRow({ id, label, onOpen }: { id: SlotId; label: string; onOpen: () 
     const urgent = stockEntries(state.inventory, catalog, todayIso()).filter((e) => e.daysLeft !== null && e.daysLeft <= 5);
     return urgent.filter((e) => recipe.ingredients.some((i) => i.ingredientId === e.ingredientId)).map((e) => catalog.ingredients[e.ingredientId].name.toLowerCase());
   }, [recipe, slot.leftoverOf, state.inventory, catalog]);
+  const meal = id.endsWith('dejeuner') ? 'dejeuner' : 'diner';
 
   return (
     <button className={`slot ${recipe ? '' : 'slot-empty'}`} onClick={onOpen}>
-      <span className="slot-meal">{label}</span>
+      <span className="slot-thumb" aria-hidden>
+        {recipe?.imageUrl ? <img src={recipe.imageUrl} alt="" loading="lazy" /> : recipe ? CATEGORY_EMOJI[recipe.category] ?? '🍽️' : <Icon name="plus" size={20} />}
+      </span>
       <span className="slot-main">
-        <span className="slot-title">{recipe ? recipe.name : present.length === 0 ? 'Personne' : '+ Choisir un repas'}</span>
-        <span className="slot-sub">
-          {present.length === 2 ? 'À deux' : present.length === 1 ? `${state.profiles[present[0]].name} seul·e` : 'Aucun convive'}
-          {slot.leftoverOf && <span className="badge info">♻️ restes de {slotLabel(slot.leftoverOf).toLowerCase()}</span>}
-          {targets.length > 0 && <span className="badge info">+ restes pour {targets.length} repas</span>}
-          {slot.extraPortions > 0 && !slot.leftoverOf && <span className="badge info">+{slot.extraPortions} portion(s)</span>}
-          <FreshnessBadge check={fresh} />
-          {savesStock.length > 0 && <span className="badge ok-badge">🧊 écoule : {savesStock.slice(0, 2).join(', ')}</span>}
-          {recipe && state.ratings[recipe.id] === 1 && <span className="badge">👍</span>}
-          {slot.note && <span className="badge">{slot.note}</span>}
-        </span>
+        <span className="slot-meal">{MEAL_LABELS[meal]}</span>
+        <span className="slot-title">{recipe ? recipe.name : present.length === 0 ? 'Personne à table' : 'Choisir un plat'}</span>
+        {(recipe || present.length < 2 || slot.note) && (
+          <span className="slot-sub">
+            {present.length === 1 && <span className="badge">{state.profiles[present[0]].name} seul·e</span>}
+            {slot.leftoverOf && <span className="badge info">♻️ restes de {slotLabel(plan, slot.leftoverOf).toLowerCase()}</span>}
+            {targets.length > 0 && <span className="badge info">+ restes ×{targets.length}</span>}
+            {slot.extraPortions > 0 && !slot.leftoverOf && <span className="badge info">+{slot.extraPortions} portion(s)</span>}
+            <FreshnessBadge check={fresh} />
+            {savesStock.length > 0 && <span className="badge ok-badge">🧊 {savesStock.slice(0, 2).join(', ')}</span>}
+            {slot.cookedOn && <span className="badge ok-badge">✓ cuisiné</span>}
+            {recipe && state.ratings[recipe.id] === 1 && <span className="badge">👍</span>}
+            {slot.note && <span className="badge">{slot.note}</span>}
+          </span>
+        )}
       </span>
-      <span className="chevron" aria-hidden>
-        ›
-      </span>
+      <Icon name="chevron" size={18} className="chevron" />
     </button>
+  );
+}
+
+/** Dates, durée du planning et nouvelle semaine. */
+function WeekSheet({ onClose }: { onClose: () => void }) {
+  const { state, dispatch } = useStore();
+  const plan = state.plan;
+  const s = state.settings;
+  // Enchaîne sur le planning en cours : dimanche → dimanche, le dernier dimanche ouvre la semaine suivante.
+  const lastDay = addDays(plan.weekOf, plan.days - 1);
+  const nextStart = lastDay >= todayIso() ? upcomingWeekday(s.startWeekday, new Date(lastDay + 'T12:00:00')) : upcomingWeekday(s.startWeekday);
+
+  const setDays = (days: number) => {
+    const lost = slotIds(plan).filter((id) => Number(id.split('-')[0].slice(1)) >= days && effectiveRecipeId(plan, id)).length;
+    if (lost > 0 && !confirm(`${lost} repas prévu(s) sur les jours retirés seront supprimés. Continuer ?`)) return;
+    dispatch({ type: 'setPlanDays', days });
+  };
+
+  return (
+    <Sheet title="Dates et durée" onClose={onClose}>
+      <section className="card">
+        <label className="field">
+          <span>Premier jour</span>
+          <input type="date" value={plan.weekOf} onChange={(e) => e.target.value && dispatch({ type: 'setWeekOf', weekOf: e.target.value })} />
+        </label>
+        <div className="field-inline">
+          <span>Nombre de jours</span>
+          <Stepper value={plan.days} min={1} max={MAX_DAYS} onChange={setDays} format={(v) => `${v} j`} />
+        </div>
+        <div className="chips">
+          {[
+            { d: 5, l: '5 jours' },
+            { d: 7, l: '7 jours' },
+            { d: 8, l: 'Dim → dim' },
+            { d: 14, l: '2 semaines' },
+          ].map((o) => (
+            <Chip key={o.d} active={plan.days === o.d} onClick={() => setDays(o.d)}>
+              {o.l}
+            </Chip>
+          ))}
+        </div>
+        <p className="muted small">{planRange(plan)}</p>
+      </section>
+
+      <section className="card">
+        <h3>Nouvelle semaine</h3>
+        <p className="small muted">
+          Vide le planning et les cases cochées (placard, frigo, notes et réglages conservés). La semaine terminée sert à varier les prochaines suggestions.
+        </p>
+        <p className="small">
+          Prochain départ : <strong>{new Date(nextStart + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}</strong>, {s.planDays} jours
+          ({WEEKDAY_LABELS[s.startWeekday].toLowerCase()} par défaut, modifiable dans Réglages › Semaine).
+        </p>
+        <button
+          className="btn primary block"
+          onClick={() => {
+            if (!confirm('Commencer une nouvelle semaine ? Le planning actuel sera vidé.')) return;
+            dispatch({ type: 'newWeek', weekOf: nextStart, days: s.planDays });
+            onClose();
+          }}
+        >
+          Commencer la nouvelle semaine
+        </button>
+      </section>
+    </Sheet>
   );
 }
 
@@ -157,45 +260,58 @@ function PrepView({ onOpen }: { onOpen: (id: SlotId) => void }) {
   const plan = state.plan;
 
   const groups = useMemo(() => {
-    return DAYS.map((d) => {
-      const items = SLOT_IDS.filter((id) => plan.slots[id].prepDay === d)
-        .map((id) => cookingPlanFor(catalog, plan, state.profiles, id))
-        .filter((c): c is NonNullable<typeof c> => c !== null && c.servings > 0)
-        .map((c) => {
-          const sideLines = c.servedSlots.flatMap((s) =>
-            PROFILE_IDS.flatMap((p) => dinerConsumption(catalog, plan, state.profiles, s, p).filter((l) => l.origin === 'accompagnement')),
-          );
-          return {
-            ...c,
-            sideLines,
-            dish: [...aggregate(c.lines, catalog).values()],
-            sides: [...aggregate(sideLines, catalog).values()],
-            checks: c.servedSlots.map((s) => ({ s, f: checkFreshness(catalog, plan, s) })),
-          };
-        });
-      return { day: d, items };
-    }).filter((g) => g.items.length > 0);
+    return dayIds(plan)
+      .map((d) => {
+        const items = slotIds(plan)
+          .filter((id) => plan.slots[id].prepDay === d)
+          .map((id) => cookingPlanFor(catalog, plan, state.profiles, id))
+          .filter((c): c is NonNullable<typeof c> => c !== null && c.servings > 0)
+          .map((c) => {
+            const sideLines = c.servedSlots.flatMap((s) =>
+              PROFILE_IDS.flatMap((p) => dinerConsumption(catalog, plan, state.profiles, s, p).filter((l) => l.origin === 'accompagnement')),
+            );
+            return {
+              ...c,
+              sideLines,
+              dish: [...aggregate(c.lines, catalog).values()],
+              sides: [...aggregate(sideLines, catalog).values()],
+              checks: c.servedSlots.map((s) => ({ s, f: checkFreshness(catalog, plan, s) })),
+            };
+          });
+        return { day: d, items };
+      })
+      .filter((g) => g.items.length > 0);
   }, [plan, state.profiles, catalog]);
 
-  if (groups.length === 0) return <p className="empty">Choisissez des repas pour voir le programme de préparation.</p>;
+  if (groups.length === 0)
+    return (
+      <Empty icon="pot" title="Rien à cuisiner pour l’instant">
+        Choisissez des repas : Popote regroupe ici ce qu’il faut préparer à chaque session, quantités totales comprises.
+      </Empty>
+    );
 
   return (
     <div className="stack">
       <p className="muted small">
-        Quantités crues totales à cuisiner, restes réservés et portions en plus compris. Refroidissez rapidement (moins de 2 h), répartissez en boîtes et étiquetez avec le jour.
+        Quantités crues totales, restes réservés et portions en plus compris. Refroidissez vite (moins de 2 h), répartissez en boîtes et étiquetez avec le jour.
       </p>
       {groups.map((g) => (
         <section key={g.day}>
-          <h2 className="day-title">Session du {DAY_LABELS[g.day].toLowerCase()}</h2>
+          <h2 className="day-title">
+            Session du {dayName(plan, g.day).toLowerCase()} <span className="muted">{dayDate(plan, g.day)}</span>
+          </h2>
           {g.items.map((it) => {
             const r = catalog.recipes[it.recipeId];
+            const cooked = plan.slots[it.sourceSlot].cookedOn;
             return (
               <article key={it.sourceSlot} className="card">
                 <button className="linkish" onClick={() => onOpen(it.sourceSlot)}>
-                  <h3>{r.name}</h3>
+                  <h3>
+                    {CATEGORY_EMOJI[r.category] ?? '🍽️'} {r.name}
+                  </h3>
                 </button>
                 <p className="muted small">
-                  {it.servings} repas · pour {it.servedSlots.map((s) => slotLabel(s).toLowerCase()).join(', ')}
+                  {it.servings} repas · pour {it.servedSlots.map((s) => slotLabel(plan, s).toLowerCase()).join(', ')}
                   {plan.slots[it.sourceSlot].extraPortions > 0 && ` + ${plan.slots[it.sourceSlot].extraPortions} portion(s) en plus`}
                 </p>
                 <ul className="qty-list">
@@ -214,9 +330,7 @@ function PrepView({ onOpen }: { onOpen: (id: SlotId) => void }) {
                 </ul>
                 {it.sides.length > 0 && (
                   <>
-                    <p className="small">
-                      <strong>Accompagnements à prévoir</strong>
-                    </p>
+                    <p className="label">Accompagnements</p>
                     <ul className="qty-list">
                       {it.sides.map((a) => {
                         const ing = catalog.ingredients[a.ingredientId];
@@ -230,8 +344,8 @@ function PrepView({ onOpen }: { onOpen: (id: SlotId) => void }) {
                     </ul>
                   </>
                 )}
-                {plan.slots[it.sourceSlot].cookedOn ? (
-                  <p className="note ok">✓ Cuisiné le {new Date(plan.slots[it.sourceSlot].cookedOn + 'T12:00:00').toLocaleDateString('fr-FR')} : stock du frigo mis à jour.</p>
+                {cooked ? (
+                  <p className="note ok">✓ Cuisiné le {new Date(cooked + 'T12:00:00').toLocaleDateString('fr-FR')} : stock du frigo mis à jour.</p>
                 ) : (
                   <button
                     className="btn block"
@@ -240,14 +354,14 @@ function PrepView({ onOpen }: { onOpen: (id: SlotId) => void }) {
                       dispatch({ type: 'markCooked', slot: it.sourceSlot, lines: [...it.lines, ...it.sideLines], date: todayIso() });
                     }}
                   >
-                    ✓ C’est cuisiné (retirer du frigo)
+                    <Icon name="check" size={18} /> C’est cuisiné
                   </button>
                 )}
                 {it.checks
                   .filter((c) => c.f && c.f.status !== 'ok')
                   .map((c) => (
                     <p key={c.s} className={`note ${c.f!.status}`}>
-                      <strong>{slotLabel(c.s)} :</strong> {c.f!.message}
+                      <strong>{slotLabel(plan, c.s)} :</strong> {c.f!.message}
                     </p>
                   ))}
               </article>

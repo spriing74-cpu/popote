@@ -18,8 +18,10 @@
     "prices": "node scripts/fetch-insee-prices.mjs"
   },
   "dependencies": {
+    "@fontsource/doto": "^5.3.0",
     "@tesseract.js-data/fra": "^1.0.0",
     "barcode-detector": "^3.2.2",
+    "pdfjs-dist": "^6.3.289",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "tesseract.js": "^7.0.0"

@@ -144,8 +144,10 @@ export interface Profile {
   id: ProfileId;
   name: string;
   factors: RoleFactors;
-  /** Où ce profil déjeune en semaine. */
+  /** Où ce profil déjeune les jours travaillés. */
   lunchPlace: 'chantier' | 'travail' | 'maison';
+  /** Jours travaillés (0 = dimanche) : les autres jours, le déjeuner se prend à la maison. */
+  workWeekdays: number[];
   microwaveAtLunch: boolean;
   /** Compléments ajoutés par défaut au déjeuner (fruit, yaourt, collation…). */
   defaultLunchExtras: string[];
@@ -156,7 +158,8 @@ export interface Profile {
 
 // ---------- Planning ----------
 
-export type Day = 'sam' | 'dim' | 'lun' | 'mar' | 'mer';
+/** Jour du planning, par position : d0 = premier jour, d1 = lendemain… */
+export type Day = `d${number}`;
 export type SlotId = `${Day}-${MealKind}`;
 
 export interface DinerChoice {
@@ -182,8 +185,10 @@ export interface Slot {
 }
 
 export interface WeekPlan {
-  /** Date ISO (AAAA-MM-JJ) du samedi de la semaine, facultative. */
-  weekOf: string | null;
+  /** Date ISO (AAAA-MM-JJ) du premier jour du planning. */
+  weekOf: string;
+  /** Nombre de jours planifiés (1 à 14). */
+  days: number;
   slots: Record<SlotId, Slot>;
 }
 
@@ -230,8 +235,20 @@ export interface ReferencePrice {
   period: string;
 }
 
+export type ThemeId = 'glass' | 'nothing';
+
 export interface Settings {
-  prepDays: Day[];
+  /** Jours de batch cooking (0 = dimanche). */
+  prepWeekdays: number[];
+  /** Premier jour d'un nouveau planning (0 = dimanche). */
+  startWeekday: number;
+  /** Durée d'un nouveau planning, en jours. */
+  planDays: number;
+  theme: ThemeId;
+  /** Clair / sombre : suivre le système ou forcer. */
+  colorScheme: 'auto' | 'light' | 'dark';
+  /** Afficher les repères nutritionnels (indicatifs) sur les fiches recettes. */
+  showNutrition: boolean;
   maxActiveMin: number | null;
   maxCostLevel: 1 | 2 | 3 | null;
   excludedAllergens: Allergen[];

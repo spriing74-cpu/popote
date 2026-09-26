@@ -1,10 +1,11 @@
 import type { AppState, PantryItem, Profile, ProfileId, Settings } from '../domain/types';
-import { emptyPlan, upcomingSaturday } from '../domain/week';
+import { emptyPlan, upcomingWeekday } from '../domain/week';
 import { INGREDIENTS } from './ingredients';
 
 // Tout ce qui est SUPPOSÉ faute de réponse est listé ici et modifiable dans Paramètres.
 export const ASSUMPTIONS: string[] = [
-  'Vous déjeunez tous les deux au travail du samedi au mercredi (présence modifiable repas par repas).',
+  'Planning du dimanche au dimanche (8 jours), durée et premier jour modifiables.',
+  'Vous déjeunez tous les deux au travail du lundi au vendredi, à la maison le week-end (jours modifiables dans chaque profil, présence modifiable repas par repas).',
   'Pas de micro-ondes sur le chantier : déjeuners « Moi » mangeables froids. Même hypothèse pour votre compagne tant que ce n’est pas précisé.',
   'Préparation groupée le samedi et le dimanche (batch cooking).',
   'Placard de base disponible : sel, poivre, huiles, vinaigre, moutarde, farine, sucre, levure, bouillon, épices courantes.',
@@ -22,6 +23,7 @@ export function defaultProfiles(): Record<ProfileId, Profile> {
       name: 'Moi',
       factors: { portion: 1, feculent: 0.85, legume: 1.25, proteine: 1.1, sauce: 0.75 },
       lunchPlace: 'chantier',
+      workWeekdays: [1, 2, 3, 4, 5],
       microwaveAtLunch: false,
       defaultLunchExtras: ['fruit'],
       defaultDinnerExtras: [],
@@ -32,6 +34,7 @@ export function defaultProfiles(): Record<ProfileId, Profile> {
       name: 'Ma compagne',
       factors: { portion: 1, feculent: 1, legume: 1, proteine: 1, sauce: 1 },
       lunchPlace: 'travail',
+      workWeekdays: [1, 2, 3, 4, 5],
       microwaveAtLunch: false,
       defaultLunchExtras: [],
       defaultDinnerExtras: [],
@@ -42,7 +45,12 @@ export function defaultProfiles(): Record<ProfileId, Profile> {
 
 export function defaultSettings(): Settings {
   return {
-    prepDays: ['sam', 'dim'],
+    prepWeekdays: [0, 6],
+    startWeekday: 0,
+    planDays: 8,
+    theme: 'glass',
+    colorScheme: 'auto',
+    showNutrition: true,
     maxActiveMin: null,
     maxCostLevel: null,
     excludedAllergens: [],
@@ -67,7 +75,7 @@ export function defaultState(): AppState {
     version: 1,
     profiles,
     settings,
-    plan: emptyPlan(profiles, settings.prepDays, upcomingSaturday()),
+    plan: emptyPlan(profiles, settings.prepWeekdays, upcomingWeekday(settings.startWeekday), settings.planDays),
     pantry: defaultPantry(),
     manualItems: [],
     checked: {},

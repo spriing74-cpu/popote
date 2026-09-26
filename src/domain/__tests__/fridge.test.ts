@@ -86,6 +86,20 @@ MERCI DE VOTRE VISITE`;
     expect(parseReceipt('POMME GOLDEN 1,95')[0].label).toBe('POMME GOLDEN');
   });
 
+  it('lit un ticket de commande en ligne (PDF) : quantités et prix au kilo en colonnes', () => {
+    const text = [
+      'Commande n° 123456 du 25/09/2026',
+      'Filets de poulet jaune 2 x 5,49 € 10,98 €',
+      'Courgettes 2,49 €/kg 2,49 €',
+      'Lait demi-écrémé 1L Qté : 6 6,30 €',
+      'Total TTC 19,77 €',
+    ].join('\n');
+    const lines = parseReceipt(text);
+    expect(lines.map((l) => l.label)).toEqual(['Filets de poulet jaune', 'Courgettes', 'Lait demi-écrémé 1L']);
+    expect(lines[0]).toMatchObject({ count: 2, price: 10.98 });
+    expect(lines[2]).toMatchObject({ count: 6, qty: 1, unit: 'l', price: 6.3 });
+  });
+
   it('quantité par défaut cohérente pour le stock', () => {
     // 500 g lus sur l'étiquette « X2 » : 2 barquettes de 500 g
     expect(defaultQuantity(CATALOG, 'poulet_filet', 2, 500, 'g')).toEqual({ qty: 1000, unit: 'g' });
@@ -161,8 +175,8 @@ describe('stock', () => {
 
   it('consomme d’abord ce qui périme le plus tôt et signale ce qui manque', () => {
     const lines = [
-      { ingredientId: 'poulet_filet', qty: 450, unit: 'g' as const, role: 'proteine' as const, slotId: 'sam-diner' as const, cookedAt: 'sam-diner' as const, profileId: 'moi' as const, origin: 'recette' as const, sourceName: 'x' },
-      { ingredientId: 'oeuf', qty: 2, unit: 'pc' as const, role: 'proteine' as const, slotId: 'sam-diner' as const, cookedAt: 'sam-diner' as const, profileId: 'moi' as const, origin: 'recette' as const, sourceName: 'x' },
+      { ingredientId: 'poulet_filet', qty: 450, unit: 'g' as const, role: 'proteine' as const, slotId: 'd0-diner' as const, cookedAt: 'd0-diner' as const, profileId: 'moi' as const, origin: 'recette' as const, sourceName: 'x' },
+      { ingredientId: 'oeuf', qty: 2, unit: 'pc' as const, role: 'proteine' as const, slotId: 'd0-diner' as const, cookedAt: 'd0-diner' as const, profileId: 'moi' as const, origin: 'recette' as const, sourceName: 'x' },
     ];
     const { inventory, missing } = consume(inv, lines, CATALOG);
     // Le lot périmé (20/09) passe en premier dans l'ordre FIFO : 200 g, puis 250 g du lot du 27/09.
@@ -181,7 +195,7 @@ describe('stock', () => {
   it('déduit le stock non périmé de la liste de courses', () => {
     const reduce = reducer(CATALOG);
     let s = defaultState();
-    s = reduce(s, { type: 'setRecipe', slot: 'sam-diner', recipeId: 'curry_poulet_coco' });
+    s = reduce(s, { type: 'setRecipe', slot: 'd0-diner', recipeId: 'curry_poulet_coco' });
     const lines = planConsumption(CATALOG, s.plan, s.profiles);
     const without = buildShoppingList(lines, CATALOG, s.pantry, []).items.find((i) => i.ingredientId === 'poulet_filet')!;
     const withStock = buildShoppingList(lines, CATALOG, [...s.pantry, ...inventoryAsPantry(inv, CATALOG, TODAY)], []);
@@ -194,13 +208,13 @@ describe('stock', () => {
   it('« C’est cuisiné » retire du stock une seule fois', () => {
     const reduce = reducer(CATALOG);
     let s = { ...defaultState(), inventory: inv };
-    s = reduce(s, { type: 'setRecipe', slot: 'sam-diner', recipeId: 'curry_poulet_coco' });
+    s = reduce(s, { type: 'setRecipe', slot: 'd0-diner', recipeId: 'curry_poulet_coco' });
     const lines = planConsumption(CATALOG, s.plan, s.profiles);
-    s = reduce(s, { type: 'markCooked', slot: 'sam-diner', lines, date: TODAY });
+    s = reduce(s, { type: 'markCooked', slot: 'd0-diner', lines, date: TODAY });
     const after1 = available(s.inventory, 'poulet_filet', CATALOG, TODAY);
-    s = reduce(s, { type: 'markCooked', slot: 'sam-diner', lines, date: TODAY });
+    s = reduce(s, { type: 'markCooked', slot: 'd0-diner', lines, date: TODAY });
     expect(available(s.inventory, 'poulet_filet', CATALOG, TODAY)).toBeCloseTo(after1);
-    expect(s.plan.slots['sam-diner'].cookedOn).toBe(TODAY);
+    expect(s.plan.slots['d0-diner'].cookedOn).toBe(TODAY);
   });
 });
 
@@ -263,12 +277,26 @@ describe('anti-gaspi', () => {
     const idea = generateIdeas(CATALOG, inv, TODAY, null)[0].recipe;
     let s = defaultState();
     s = reduce(s, { type: 'keepRecipe', recipe: idea });
-    s = reduce(s, { type: 'setRecipe', slot: 'dim-diner', recipeId: idea.id });
-    expect(s.plan.slots['dim-diner'].recipeId).toBe(idea.id);
+    s = reduce(s, { type: 'setRecipe', slot: 'd1-diner', recipeId: idea.id });
+    expect(s.plan.slots['d1-diner'].recipeId).toBe(idea.id);
     const back = parseImport(exportJson(s), CATALOG);
     expect(back.customRecipes[0].id).toBe(idea.id);
-    expect(back.plan.slots['dim-diner'].recipeId).toBe(idea.id);
+    expect(back.plan.slots['d1-diner'].recipeId).toBe(idea.id);
     // Une recette utilisée au planning ne peut pas être oubliée.
     expect(reduce(s, { type: 'removeCustomRecipe', id: idea.id }).customRecipes).toHaveLength(1);
+  });
+});
+
+describe('ticket PDF', () => {
+  it('reconstitue les lignes à partir du texte positionné', async () => {
+    const { linesFromItems } = await import('../../scan/pdf');
+    const lines = linesFromItems([
+      { str: '10,98 €', x: 480, y: 700.4, width: 40, height: 10 },
+      { str: 'Filets de poulet', x: 40, y: 700, width: 90, height: 10 },
+      { str: 'Courgettes', x: 40, y: 684, width: 60, height: 10 },
+      { str: '2,49 €', x: 480, y: 684, width: 35, height: 10 },
+      { str: 'Total', x: 40, y: 600, width: 30, height: 10 },
+    ]);
+    expect(lines).toEqual(['Filets de poulet 10,98 €', 'Courgettes 2,49 €', 'Total']);
   });
 });

@@ -17,7 +17,7 @@ function totals(plan: WeekPlan) {
 
 describe('portions différentes entre profils', () => {
   it('applique les facteurs de chaque profil par rôle d’ingrédient', () => {
-    const plan = put(testPlan(), 'sam-diner', (s) => withRecipe(s, C.recipes.pates_poulet));
+    const plan = put(testPlan(), 'd0-diner', (s) => withRecipe(s, C.recipes.pates_poulet));
     const t = totals(plan);
     // Pâtes (féculent) : moi 100×0,8 + compagne 100×1
     expect(t.pates).toBeCloseTo(180);
@@ -32,8 +32,8 @@ describe('portions différentes entre profils', () => {
   });
 
   it('applique le multiplicateur ponctuel du repas et l’accompagnement propre à chacun', () => {
-    let plan = put(testPlan(), 'sam-diner', (s) => withRecipe(s, C.recipes.omelette));
-    plan = put(plan, 'sam-diner', (s) => ({
+    let plan = put(testPlan(), 'd0-diner', (s) => withRecipe(s, C.recipes.omelette));
+    plan = put(plan, 'd0-diner', (s) => ({
       ...s,
       diners: {
         moi: { ...s.diners.moi, portion: 1.5, sideId: 'brocoli' },
@@ -49,16 +49,16 @@ describe('portions différentes entre profils', () => {
 
 describe('convives absents', () => {
   it('ne compte aucune portion fictive pour une personne absente', () => {
-    let plan = put(testPlan(), 'lun-dejeuner', (s) => withRecipe(s, C.recipes.salade_froide));
-    plan = put(plan, 'lun-dejeuner', (s) => ({ ...s, diners: { ...s.diners, compagne: { ...s.diners.compagne, present: false } } }));
+    let plan = put(testPlan(), 'd2-dejeuner', (s) => withRecipe(s, C.recipes.salade_froide));
+    plan = put(plan, 'd2-dejeuner', (s) => ({ ...s, diners: { ...s.diners, compagne: { ...s.diners.compagne, present: false } } }));
     const t = totals(plan);
     expect(t.pates).toBeCloseTo(80 * 0.8);
     expect(t.oeuf).toBeCloseTo(1.2);
   });
 
   it('un créneau sans personne ne génère rien, même avec une recette', () => {
-    let plan = put(testPlan(), 'dim-diner', (s) => withRecipe(s, C.recipes.omelette));
-    plan = put(plan, 'dim-diner', (s) => ({
+    let plan = put(testPlan(), 'd1-diner', (s) => withRecipe(s, C.recipes.omelette));
+    plan = put(plan, 'd1-diner', (s) => ({
       ...s,
       diners: { moi: { ...s.diners.moi, present: false }, compagne: { ...s.diners.compagne, present: false } },
     }));
@@ -68,8 +68,8 @@ describe('convives absents', () => {
 
 describe('agrégation des ingrédients', () => {
   it('additionne un même ingrédient venant de recettes et d’unités différentes', () => {
-    let plan = put(testPlan(), 'sam-diner', (s) => withRecipe(s, C.recipes.pates_poulet));
-    plan = put(plan, 'dim-diner', (s) => withRecipe(s, C.recipes.omelette));
+    let plan = put(testPlan(), 'd0-diner', (s) => withRecipe(s, C.recipes.pates_poulet));
+    plan = put(plan, 'd1-diner', (s) => withRecipe(s, C.recipes.omelette));
     const agg = aggregate(planConsumption(C, plan, profiles), C);
     // Oignon : 1,25 pc + (50 g ×1,5 + 50 g) = 125 g = 1,25 pc → 2,5 pc
     expect(agg.get('oignon')!.qty).toBeCloseTo(2.5);
@@ -87,16 +87,16 @@ describe('agrégation des ingrédients', () => {
         bizarre: { ...C.recipes.omelette, id: 'bizarre', ingredients: [{ ingredientId: 'riz', qty: 1, unit: 'pc' as const, role: 'autre' as const }] },
       },
     };
-    const plan = put(testPlan(), 'sam-diner', (s) => withRecipe(s, catalog.recipes.bizarre));
+    const plan = put(testPlan(), 'd0-diner', (s) => withRecipe(s, catalog.recipes.bizarre));
     const agg = aggregate(planConsumption(catalog, plan, profiles), catalog);
     expect(agg.get('riz')!.qty).toBe(0);
     expect(agg.get('riz')!.unconvertible).toEqual([{ qty: 2, unit: 'pc' }]);
   });
 
   it('construit une liste arrondie, déduit le placard et ajoute les articles manuels', () => {
-    let plan = put(testPlan(), 'sam-diner', (s) => withRecipe(s, C.recipes.pates_poulet));
-    plan = put(plan, 'dim-diner', (s) => withRecipe(s, C.recipes.pates_poulet));
-    plan = put(plan, 'lun-diner', (s) => withRecipe(s, C.recipes.pates_poulet));
+    let plan = put(testPlan(), 'd0-diner', (s) => withRecipe(s, C.recipes.pates_poulet));
+    plan = put(plan, 'd1-diner', (s) => withRecipe(s, C.recipes.pates_poulet));
+    plan = put(plan, 'd2-diner', (s) => withRecipe(s, C.recipes.pates_poulet));
     const lines = planConsumption(C, plan, profiles);
     const list = buildShoppingList(
       lines,
@@ -126,9 +126,9 @@ describe('agrégation des ingrédients', () => {
 describe('restes', () => {
   it('ne compte pas deux fois les portions réservées pour un déjeuner', () => {
     // Samedi soir : pâtes pour deux ; lundi midi : les restes, pour moi seulement.
-    let plan = put(testPlan(), 'sam-diner', (s) => withRecipe(s, C.recipes.pates_poulet));
-    plan = put(plan, 'lun-dejeuner', (s) => withLeftover(s, 'sam-diner', C.recipes.pates_poulet));
-    plan = put(plan, 'lun-dejeuner', (s) => ({ ...s, diners: { ...s.diners, compagne: { ...s.diners.compagne, present: false } } }));
+    let plan = put(testPlan(), 'd0-diner', (s) => withRecipe(s, C.recipes.pates_poulet));
+    plan = put(plan, 'd2-dejeuner', (s) => withLeftover(s, 'd0-diner', C.recipes.pates_poulet));
+    plan = put(plan, 'd2-dejeuner', (s) => ({ ...s, diners: { ...s.diners, compagne: { ...s.diners.compagne, present: false } } }));
 
     const t = totals(plan);
     // 3 repas réels : moi (sam), compagne (sam), moi (lun)
@@ -136,28 +136,28 @@ describe('restes', () => {
     expect(t.poulet).toBeCloseTo(120 + 100 + 120);
 
     // La cuisson du samedi soir inclut la portion réservée.
-    const cook = cookingPlanFor(C, plan, profiles, 'sam-diner')!;
+    const cook = cookingPlanFor(C, plan, profiles, 'd0-diner')!;
     expect(cook.servings).toBe(3);
-    expect(cook.servedSlots).toEqual(['sam-diner', 'lun-dejeuner']);
+    expect(cook.servedSlots).toEqual(['d0-diner', 'd2-dejeuner']);
     const cooked = aggregate(cook.lines, C);
     expect(cooked.get('pates')!.qty).toBeCloseTo(260);
 
     // Le créneau de restes ne produit pas de cuisson propre.
-    expect(cookingPlanFor(C, plan, profiles, 'lun-dejeuner')).toBeNull();
+    expect(cookingPlanFor(C, plan, profiles, 'd2-dejeuner')).toBeNull();
   });
 
   it('compte les portions supplémentaires (congélateur) une seule fois, au format standard', () => {
-    let plan = put(testPlan(), 'dim-diner', (s) => withRecipe(s, C.recipes.pates_poulet));
-    plan = put(plan, 'dim-diner', (s) => ({ ...s, extraPortions: 2 }));
+    let plan = put(testPlan(), 'd1-diner', (s) => withRecipe(s, C.recipes.pates_poulet));
+    plan = put(plan, 'd1-diner', (s) => ({ ...s, extraPortions: 2 }));
     const t = totals(plan);
     expect(t.pates).toBeCloseTo(180 + 200);
-    expect(cookingPlanFor(C, plan, profiles, 'dim-diner')!.servings).toBe(4);
+    expect(cookingPlanFor(C, plan, profiles, 'd1-diner')!.servings).toBe(4);
   });
 
   it('les restes suivent la recette du créneau source', () => {
-    let plan = put(testPlan(), 'sam-diner', (s) => withRecipe(s, C.recipes.omelette));
-    plan = put(plan, 'dim-dejeuner', (s) => withLeftover(s, 'sam-diner', C.recipes.omelette));
-    const lines = planConsumption(C, plan, profiles).filter((l) => l.slotId === 'dim-dejeuner');
-    expect(lines.every((l) => l.cookedAt === 'sam-diner' && l.sourceName === 'Omelette oignon')).toBe(true);
+    let plan = put(testPlan(), 'd0-diner', (s) => withRecipe(s, C.recipes.omelette));
+    plan = put(plan, 'd1-dejeuner', (s) => withLeftover(s, 'd0-diner', C.recipes.omelette));
+    const lines = planConsumption(C, plan, profiles).filter((l) => l.slotId === 'd1-dejeuner');
+    expect(lines.every((l) => l.cookedAt === 'd0-diner' && l.sourceName === 'Omelette oignon')).toBe(true);
   });
 });

@@ -25,7 +25,7 @@ export function checkFreshness(catalog: Catalog, plan: WeekPlan, id: SlotId): Fr
   const daysStored = dayIndex(day) - dayIndex(prepDay);
 
   if (slot.leftoverOf && slotIndex(slot.leftoverOf) >= slotIndex(id)) {
-    return { status: 'incoherent', daysStored, limitDays: 0, message: `Les restes viennent de ${slotLabel(slot.leftoverOf)}, qui a lieu après ce repas.` };
+    return { status: 'incoherent', daysStored, limitDays: 0, message: `Les restes viennent de ${slotLabel(plan, slot.leftoverOf)}, qui a lieu après ce repas.` };
   }
   if (daysStored < 0) {
     return { status: 'incoherent', daysStored, limitDays: 0, message: 'Le jour de préparation est après le repas.' };

@@ -5,17 +5,18 @@ import { formatAmount } from '../domain/units';
 import { todayIso, urgency, type Urgency } from '../domain/inventory';
 import { generateIdeas, rankCatalog, type RankedRecipe, type StockUse } from '../domain/antigaspi';
 import { useCatalog, useStore } from '../state/store';
-import { Sheet } from './common';
+import { Empty, ScreenHeader, Segmented, Sheet } from './common';
+import { Icon } from './icons';
 import { BarcodeScanner } from './BarcodeScanner';
 import { ReceiptScanner } from './ReceiptScanner';
 import { ItemForm, LOCATION_LABELS, expiryLabel, formatDate } from './ItemForm';
 import { RecipeDetail } from './RecipeDetail';
 
 const GROUPS: { u: Urgency; title: string }[] = [
-  { u: 'perime', title: '⚠️ Date dépassée' },
-  { u: 'urgent', title: '🔴 À manger d’ici 2 jours' },
-  { u: 'bientot', title: '🟠 Dans la semaine' },
-  { u: 'ok', title: '🟢 Plus tard' },
+  { u: 'perime', title: 'Date dépassée' },
+  { u: 'urgent', title: 'À manger d’ici 2 jours' },
+  { u: 'bientot', title: 'Dans la semaine' },
+  { u: 'ok', title: 'Plus tard' },
   { u: 'inconnu', title: 'Sans date' },
 ];
 
@@ -34,33 +35,55 @@ export function FridgeScreen() {
 
   return (
     <div className="screen">
-      <h1>Frigo</h1>
-      <div className="scan-actions">
-        <button className="btn primary" onClick={() => setModal('barcode')}>
-          <span className="big-icon">▥</span>Codes-barres
+      <ScreenHeader title="Frigo" subtitle={`${state.inventory.length} produit${state.inventory.length > 1 ? 's' : ''} suivis`} />
+      <div className="tiles">
+        <button className="tile" onClick={() => setModal('receipt')}>
+          <span className="tile-icon">
+            <Icon name="receipt" size={20} />
+          </span>
+          <span>
+            Ticket
+            <small>photo, PDF, texte</small>
+          </span>
         </button>
-        <button className="btn primary" onClick={() => setModal('receipt')}>
-          <span className="big-icon">🧾</span>Ticket
+        <button className="tile" onClick={() => setModal('barcode')}>
+          <span className="tile-icon">
+            <Icon name="barcode" size={20} />
+          </span>
+          <span>
+            Code-barres
+            <small>et date</small>
+          </span>
         </button>
-        <button className="btn" onClick={() => setModal('add')}>
-          <span className="big-icon">✍️</span>À la main
+        <button className="tile" onClick={() => setModal('add')}>
+          <span className="tile-icon">
+            <Icon name="plus" size={20} />
+          </span>
+          <span>
+            À la main
+            <small>saisie rapide</small>
+          </span>
         </button>
       </div>
       {(counts.urgent > 0 || counts.perime > 0) && (
-        <p className="note trop_long">
-          {counts.urgent > 0 && `${counts.urgent} produit(s) à consommer d’ici 2 jours. `}
-          {counts.perime > 0 && `${counts.perime} produit(s) à date dépassée : vérifiez (DLC = ne pas consommer ; DDM = souvent encore bon).`}
-        </p>
+        <button className="alert" style={{ width: '100%', textAlign: 'left', color: 'inherit' }} onClick={() => setView('idees')}>
+          <span className="alert-num">{counts.urgent + counts.perime}</span>
+          <span>
+            {counts.urgent > 0 && `${counts.urgent} à manger d’ici 2 jours. `}
+            {counts.perime > 0 && `${counts.perime} à date dépassée (DLC : ne pas consommer ; DDM : souvent encore bon). `}
+            <strong>Voir les idées anti-gaspi ›</strong>
+          </span>
+        </button>
       )}
 
-      <div className="segmented" role="tablist">
-        <button role="tab" aria-selected={view === 'stock'} className={view === 'stock' ? 'active' : ''} onClick={() => setView('stock')}>
-          Stock ({state.inventory.length})
-        </button>
-        <button role="tab" aria-selected={view === 'idees'} className={view === 'idees' ? 'active' : ''} onClick={() => setView('idees')}>
-          Idées anti-gaspi
-        </button>
-      </div>
+      <Segmented
+        value={view}
+        onChange={setView}
+        options={[
+          { id: 'stock', label: `Stock (${state.inventory.length})` },
+          { id: 'idees', label: 'Idées anti-gaspi' },
+        ]}
+      />
 
       {view === 'stock' ? <StockList onEdit={(i) => setModal({ edit: i })} /> : <Ideas onOpen={(r) => setModal({ idea: r })} />}
 
@@ -78,9 +101,9 @@ function StockList({ onEdit }: { onEdit: (i: InventoryItem) => void }) {
   const today = todayIso();
   if (state.inventory.length === 0)
     return (
-      <p className="empty">
-        Stock vide. Après les courses, scannez les codes-barres des produits ou le ticket de caisse : Popote suivra les dates et proposera des recettes pour ne rien jeter.
-      </p>
+      <Empty icon="fridge" title="Frigo vide">
+        Après les courses, importez le ticket (photo, PDF du drive ou texte) ou scannez les codes-barres : Popote suit les dates et propose des recettes pour ne rien jeter.
+      </Empty>
     );
   const sorted = [...state.inventory].sort((a, b) => (a.expiry ?? '9999').localeCompare(b.expiry ?? '9999'));
   return (
@@ -95,6 +118,7 @@ function StockList({ onEdit }: { onEdit: (i: InventoryItem) => void }) {
               {items.map((i) => (
                 <li key={i.id} className="shop-item">
                   <button className="stock-row" onClick={() => onEdit(i)}>
+                    <span className={`dot ${urgency(i, today)}`} aria-hidden />
                     <span className="shop-label">
                       {i.label}
                       {i.ingredientId && INGREDIENTS[i.ingredientId].name !== i.label && <span className="muted small"> · {INGREDIENTS[i.ingredientId].name}</span>}
@@ -144,7 +168,12 @@ function Ideas({ onOpen }: { onOpen: (r: Recipe) => void }) {
   const ideas = useMemo(() => generateIdeas(catalog, state.inventory, today, state.settings, variant), [catalog, state.inventory, state.settings, today, variant]);
   const ranked: RankedRecipe[] = useMemo(() => rankCatalog(catalog, state.inventory, today, state.settings, 6), [catalog, state.inventory, state.settings, today]);
 
-  if (state.inventory.length === 0) return <p className="empty">Ajoutez des produits au stock pour obtenir des idées.</p>;
+  if (state.inventory.length === 0)
+    return (
+      <Empty icon="leaf" title="Pas encore d’idées">
+        Ajoutez des produits au stock : Popote composera des recettes avec ce qui périme en premier.
+      </Empty>
+    );
   return (
     <div className="stack">
       <section>
@@ -155,7 +184,7 @@ function Ideas({ onOpen }: { onOpen: (r: Recipe) => void }) {
           </button>
         </div>
         <p className="muted small">Composées hors ligne à partir de votre stock, en commençant par ce qui périme. Gardez celles qui vous plaisent pour les planifier.</p>
-        {ideas.length === 0 && <p className="empty">Pas assez de produits à sauver pour composer une recette.</p>}
+        {ideas.length === 0 && <p className="muted small">Pas assez de produits à sauver pour composer une recette.</p>}
         <div className="stack">
           {ideas.map((i) => (
             <article key={i.recipe.id} className="card recipe-card">

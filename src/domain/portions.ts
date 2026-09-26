@@ -9,7 +9,7 @@ import type {
   Unit,
   WeekPlan,
 } from './types';
-import { PROFILE_IDS, SLOT_IDS, effectiveRecipeId, leftoverTargets } from './week';
+import { PROFILE_IDS, effectiveRecipeId, leftoverTargets, slotIds } from './week';
 
 /** Une quantité réellement consommée (ou cuisinée) par une personne sur un créneau. */
 export interface ConsumptionLine {
@@ -145,7 +145,7 @@ export function extraPortionLines(catalog: Catalog, plan: WeekPlan, id: SlotId):
  */
 export function planConsumption(catalog: Catalog, plan: WeekPlan, profiles: Profiles): ConsumptionLine[] {
   const lines: ConsumptionLine[] = [];
-  for (const id of SLOT_IDS) {
+  for (const id of slotIds(plan)) {
     for (const p of PROFILE_IDS) lines.push(...dinerConsumption(catalog, plan, profiles, id, p));
     lines.push(...extraPortionLines(catalog, plan, id));
   }

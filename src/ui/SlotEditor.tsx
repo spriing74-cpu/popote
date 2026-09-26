@@ -2,12 +2,11 @@ import { useState } from 'react';
 import type { Day, ProfileId, SlotId } from '../domain/types';
 import { ACCOMPAGNEMENTS, COMPLEMENTS } from '../data/sides';
 import { checkFreshness } from '../domain/freshness';
-import { lunchConstraint } from '../domain/planner';
-import { DAYS, DAY_LABELS, PROFILE_IDS, SLOT_IDS, dayIndex, effectiveRecipeId, leftoverTargets, parseSlotId, slotIndex, slotLabel } from '../domain/week';
+import { slotConstraint } from '../domain/planner';
+import { PROFILE_IDS, dayDate, dayIds, dayIndex, dayName, effectiveRecipeId, leftoverTargets, parseSlotId, slotIds, slotIndex, slotLabel } from '../domain/week';
 import { useCatalog, useStore } from '../state/store';
 import { Chip, FreshnessBadge, Sheet, Stepper, Toggle, portionLabel } from './common';
 import { RecipesScreen } from './RecipesScreen';
-import { RecipeDetail } from './RecipeDetail';
 
 const PORTIONS = [0.5, 0.75, 1, 1.25, 1.5, 2];
 
@@ -15,20 +14,19 @@ export function SlotEditor({ id, onClose }: { id: SlotId; onClose: () => void })
   const { state, dispatch } = useStore();
   const catalog = useCatalog();
   const [picking, setPicking] = useState(false);
-  const [viewing, setViewing] = useState(false);
   const plan = state.plan;
   const slot = plan.slots[id];
-  const { day, meal } = parseSlotId(id);
+  const { day } = parseSlotId(id);
   const recipeId = effectiveRecipeId(plan, id);
   const recipe = recipeId ? catalog.recipes[recipeId] : null;
   const freshness = checkFreshness(catalog, plan, id);
-  const constraint = lunchConstraint(slot, meal, state.profiles);
+  const constraint = slotConstraint(plan, id, state.profiles);
   const targets = leftoverTargets(plan, id);
 
   // Sources possibles de restes : créneaux antérieurs cuisinés (pas eux-mêmes des restes).
-  const sources = SLOT_IDS.filter((s) => slotIndex(s) < slotIndex(id) && plan.slots[s].recipeId && !plan.slots[s].leftoverOf);
+  const sources = slotIds(plan).filter((s) => slotIndex(s) < slotIndex(id) && plan.slots[s].recipeId && !plan.slots[s].leftoverOf);
   // Cibles possibles : créneaux postérieurs.
-  const laterSlots = SLOT_IDS.filter((s) => slotIndex(s) > slotIndex(id));
+  const laterSlots = slotIds(plan).filter((s) => slotIndex(s) > slotIndex(id));
 
   const setDiner = (p: ProfileId, patch: Partial<(typeof slot.diners)[ProfileId]>) => dispatch({ type: 'setDiner', slot: id, profile: p, patch });
 
@@ -38,14 +36,14 @@ export function SlotEditor({ id, onClose }: { id: SlotId; onClose: () => void })
   ];
 
   return (
-    <Sheet title={slotLabel(id)} onClose={onClose}>
+    <Sheet title={`Réglages — ${slotLabel(plan, id)}`} onClose={onClose}>
       <section className="card">
         <h3>Plat</h3>
-        {slot.leftoverOf && <p className="note info">♻️ Restes de {slotLabel(slot.leftoverOf).toLowerCase()} : aucun achat supplémentaire pour le plat, la quantité est ajoutée à la cuisson d’origine.</p>}
+        {slot.leftoverOf && <p className="note info">♻️ Restes de {slotLabel(plan, slot.leftoverOf).toLowerCase()} : aucun achat supplémentaire pour le plat, la quantité est ajoutée à la cuisson d’origine.</p>}
         {recipe ? (
-          <button className="linkish" onClick={() => setViewing(true)}>
-            <strong>{recipe.name}</strong> <span className="muted">› voir la fiche</span>
-          </button>
+          <p>
+            <strong>{recipe.name}</strong>
+          </p>
         ) : (
           <p className="muted">Aucun plat choisi.</p>
         )}
@@ -69,7 +67,7 @@ export function SlotEditor({ id, onClose }: { id: SlotId; onClose: () => void })
               <option value="">— pas de restes —</option>
               {sources.map((s) => (
                 <option key={s} value={s}>
-                  {slotLabel(s)} : {catalog.recipes[plan.slots[s].recipeId!]?.name}
+                  {slotLabel(plan, s)} : {catalog.recipes[plan.slots[s].recipeId!]?.name}
                 </option>
               ))}
             </select>
@@ -138,9 +136,9 @@ export function SlotEditor({ id, onClose }: { id: SlotId; onClose: () => void })
           <label className="field">
             <span>Cuisiné le</span>
             <select value={slot.prepDay} onChange={(e) => dispatch({ type: 'setSlot', slot: id, patch: { prepDay: e.target.value as Day } })}>
-              {DAYS.filter((d) => dayIndex(d) <= dayIndex(day)).map((d) => (
+              {dayIds(plan).filter((d) => dayIndex(d) <= dayIndex(day)).map((d) => (
                 <option key={d} value={d}>
-                  {DAY_LABELS[d]}
+                  {dayName(plan, d)} {dayDate(plan, d)}
                   {d === day ? ' (le jour même)' : ''}
                 </option>
               ))}
@@ -173,7 +171,7 @@ export function SlotEditor({ id, onClose }: { id: SlotId; onClose: () => void })
                         }
                       />
                       <span>
-                        {slotLabel(t)}
+                        {slotLabel(plan, t)}
                         {!checked && otherRecipe && <span className="muted"> — remplacera {catalog.recipes[otherRecipe]?.name}</span>}
                         {!checked && other.leftoverOf && <span className="muted"> (actuellement des restes)</span>}
                       </span>
@@ -196,7 +194,7 @@ export function SlotEditor({ id, onClose }: { id: SlotId; onClose: () => void })
       </section>
 
       {picking && (
-        <Sheet title={`Recette — ${slotLabel(id)}`} onClose={() => setPicking(false)}>
+        <Sheet title={`Recette — ${slotLabel(plan, id)}`} onClose={() => setPicking(false)}>
           <RecipesScreen
             pickFor={id}
             onPick={(rid) => {
@@ -204,11 +202,6 @@ export function SlotEditor({ id, onClose }: { id: SlotId; onClose: () => void })
               setPicking(false);
             }}
           />
-        </Sheet>
-      )}
-      {viewing && recipeId && (
-        <Sheet title="Recette" onClose={() => setViewing(false)}>
-          <RecipeDetail recipeId={recipeId} hidePlanning />
         </Sheet>
       )}
     </Sheet>

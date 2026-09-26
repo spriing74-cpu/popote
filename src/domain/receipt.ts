@@ -14,13 +14,17 @@ export interface ReceiptLine {
 
 // Lignes qui ne sont pas des articles.
 const NOISE =
-  /(sous[ -]?total|total|tva|t\.v\.a|\bht\b|\bttc\b|carte|\bcb\b|visa|mastercard|contact|esp[eè]ces|rendu|monnaie|merci|bienvenue|ticket|caisse|caissier|h[oô]tesse|siret|siren|\btel\b|t[ée]l[ée]phone|www|http|avantage|remise|r[ée]duction|fid[ée]lit[ée]|cagnotte|points|nombre d.articles|articles?\s*:|montant|net a payer|[àa] payer|bon d.achat|horaires|ouvert|magasin|\bsa\b|capital|rcs|transaction|autoris|\bdate\b|\bheure\b|client|re[çc]u|a conserver|[ée]change|rembours|leclerc|auchan|lidl|carrefour|intermarch|super ?u|hyper ?u|casino|monoprix|franprix|netto|aldi|cora|match|grand frais)/i;
+  /(sous[ -]?total|total|tva|t\.v\.a|\bht\b|\bttc\b|carte|\bcb\b|visa|mastercard|contact|esp[eè]ces|rendu|monnaie|merci|bienvenue|ticket|caisse|caissier|h[oô]tesse|siret|siren|\btel\b|t[ée]l[ée]phone|www|http|avantage|remise|r[ée]duction|fid[ée]lit[ée]|cagnotte|points|nombre d.articles|articles?\s*:|montant|net a payer|[àa] payer|bon d.achat|horaires|ouvert|magasin|\bsa\b|capital|rcs|transaction|autoris|\bdate\b|\bheure\b|client|re[çc]u|a conserver|[ée]change|rembours|leclerc|auchan|lidl|carrefour|intermarch|super ?u\b|hyper ?u\b|casino|monoprix|franprix|netto|aldi|\bcora\b|match\b|grand frais)/i;
 
 const PRICE_END = /(-?\d{1,4}[,.]\d{2})\s*(?:€|eur|e)?\s*[a-z*]?\s*$/i;
 const WEIGH_LINE = /^\s*(\d+[,.]\d{1,3})\s*kg\s*[x*]\s*(\d+[,.]\d{2})/i;
 const COUNT_LINE = /^\s*(\d{1,2})\s*[x*]\s*(\d+[,.]\d{2})/i;
 const QTY_IN_LABEL = /(\d+(?:[,.]\d+)?)\s*(kg|g|gr|cl|ml|l)\b/i;
 const MULTI_IN_LABEL = /\bx\s?(\d{1,2})\b|\b(\d{1,2})\s?x\b/i;
+
+const INLINE_MULTI = /\s(\d{1,2})\s*[x×*]\s*\d+[,.]\d{2}\s*(?:€|eur)?\s*$/i;
+const QTE = /\bqu?a?n?t[ée]?t?[ée]?\s*:?\s*(\d{1,2})\b/i;
+const UNIT_PRICE = /\d+[,.]\d{2}\s*(?:€|eur)?\s*\/\s*(?:kg|l|litre|pc|pi[eè]ce|u|unit[ée])\b/gi;
 
 const num = (s: string) => parseFloat(s.replace(',', '.'));
 
@@ -72,6 +76,18 @@ export function parseReceipt(text: string): ReceiptLine[] {
       count = parseInt(lead[1], 10);
       label = label.slice(lead[0].length);
     }
+    // Tickets PDF / drive : « Libellé 2 x 1,25 € 2,50 € », « Qté : 2 », prix au kilo en colonne.
+    const inline = label.match(INLINE_MULTI);
+    if (inline) {
+      count = parseInt(inline[1], 10);
+      label = label.slice(0, inline.index).trim();
+    }
+    const qte = label.match(QTE);
+    if (qte) {
+      count = parseInt(qte[1], 10);
+      label = label.replace(QTE, ' ').trim();
+    }
+    label = label.replace(UNIT_PRICE, ' ');
     label = label.replace(/^\d{4,}\s*/, '').replace(/[*#]+/g, ' ').replace(/\s+/g, ' ').trim();
     if (label.replace(/[^a-zA-ZÀ-ÿ]/g, '').length < 3) continue;
 

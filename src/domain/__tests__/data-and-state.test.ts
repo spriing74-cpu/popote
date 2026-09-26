@@ -47,21 +47,21 @@ describe('état, restes et sauvegarde', () => {
 
   it('réserve des restes puis les détache si la recette source change', () => {
     let s = defaultState();
-    s = reduce(s, { type: 'setRecipe', slot: 'sam-diner', recipeId: 'chili_con_carne' });
-    s = reduce(s, { type: 'reserveLeftovers', source: 'sam-diner', targets: ['lun-dejeuner', 'mar-dejeuner'] });
-    expect(leftoverTargets(s.plan, 'sam-diner')).toEqual(['lun-dejeuner', 'mar-dejeuner']);
+    s = reduce(s, { type: 'setRecipe', slot: 'd0-diner', recipeId: 'chili_con_carne' });
+    s = reduce(s, { type: 'reserveLeftovers', source: 'd0-diner', targets: ['d2-dejeuner', 'd3-dejeuner'] });
+    expect(leftoverTargets(s.plan, 'd0-diner')).toEqual(['d2-dejeuner', 'd3-dejeuner']);
     // Un créneau antérieur ne peut pas recevoir les restes.
-    s = reduce(s, { type: 'reserveLeftovers', source: 'sam-diner', targets: ['sam-dejeuner', 'lun-dejeuner'] });
-    expect(leftoverTargets(s.plan, 'sam-diner')).toEqual(['lun-dejeuner']);
-    s = reduce(s, { type: 'setRecipe', slot: 'sam-diner', recipeId: 'dahl_lentilles_corail' });
-    expect(leftoverTargets(s.plan, 'sam-diner')).toEqual([]);
-    expect(s.plan.slots['lun-dejeuner'].recipeId).toBeNull();
+    s = reduce(s, { type: 'reserveLeftovers', source: 'd0-diner', targets: ['d0-dejeuner', 'd2-dejeuner'] });
+    expect(leftoverTargets(s.plan, 'd0-diner')).toEqual(['d2-dejeuner']);
+    s = reduce(s, { type: 'setRecipe', slot: 'd0-diner', recipeId: 'dahl_lentilles_corail' });
+    expect(leftoverTargets(s.plan, 'd0-diner')).toEqual([]);
+    expect(s.plan.slots['d2-dejeuner'].recipeId).toBeNull();
   });
 
   it('scénario de la checklist iPhone : restes du samedi soir pour lundi midi', () => {
     let s = defaultState();
-    s = reduce(s, { type: 'setRecipe', slot: 'sam-diner', recipeId: 'poulet_roti_pdt' });
-    s = reduce(s, { type: 'reserveLeftovers', source: 'sam-diner', targets: ['lun-dejeuner'] });
+    s = reduce(s, { type: 'setRecipe', slot: 'd0-diner', recipeId: 'poulet_roti_pdt' });
+    s = reduce(s, { type: 'reserveLeftovers', source: 'd0-diner', targets: ['d2-dejeuner'] });
     const list = buildShoppingList(planConsumption(CATALOG, s.plan, s.profiles), CATALOG, s.pantry, []);
     const cuisses = list.items.find((i) => i.ingredientId === 'poulet_cuisse')!;
     expect(cuisses.needed).toBeCloseTo(4.2);
@@ -70,8 +70,8 @@ describe('état, restes et sauvegarde', () => {
 
   it('exporte puis réimporte à l’identique', () => {
     let s = defaultState();
-    s = reduce(s, { type: 'setRecipe', slot: 'dim-diner', recipeId: 'lasagnes_bolognaise' });
-    s = reduce(s, { type: 'setDiner', slot: 'dim-diner', profile: 'compagne', patch: { portion: 1.25, extras: ['yaourt'] } });
+    s = reduce(s, { type: 'setRecipe', slot: 'd1-diner', recipeId: 'lasagnes_bolognaise' });
+    s = reduce(s, { type: 'setDiner', slot: 'd1-diner', profile: 'compagne', patch: { portion: 1.25, extras: ['yaourt'] } });
     s = reduce(s, { type: 'toggleChecked', key: 'ing:oignon' });
     s = reduce(s, { type: 'addManualItem', item: { id: 'x', label: 'Éponges', quantity: '2', aisle: 'divers' } });
     const back = parseImport(exportJson(s), CATALOG);
@@ -81,9 +81,9 @@ describe('état, restes et sauvegarde', () => {
   it('rejette un fichier étranger et répare des données partielles', () => {
     expect(() => parseImport('pas du json', CATALOG)).toThrow();
     expect(() => parseImport('{"foo":1}', CATALOG)).toThrow();
-    const repaired = normalizeState({ plan: { slots: { 'lun-diner': { recipeId: 'inconnue', leftoverOf: 'mer-diner' } } } }, CATALOG);
-    expect(repaired.plan.slots['lun-diner'].recipeId).toBeNull();
-    expect(repaired.plan.slots['lun-diner'].leftoverOf).toBeNull();
+    const repaired = normalizeState({ plan: { slots: { 'd2-diner': { recipeId: 'inconnue', leftoverOf: 'd4-diner' } } } }, CATALOG);
+    expect(repaired.plan.slots['d2-diner'].recipeId).toBeNull();
+    expect(repaired.plan.slots['d2-diner'].leftoverOf).toBeNull();
     expect(repaired.profiles.moi.name).toBe('Moi');
   });
 });
@@ -92,7 +92,7 @@ describe('budget', () => {
   it('n’affiche un coût que pour les articles ayant un prix saisi, sans rien inventer', () => {
     let s = defaultState();
     const reduce = reducer(CATALOG);
-    s = reduce(s, { type: 'setRecipe', slot: 'sam-diner', recipeId: 'chili_con_carne' });
+    s = reduce(s, { type: 'setRecipe', slot: 'd0-diner', recipeId: 'chili_con_carne' });
     const list = buildShoppingList(planConsumption(CATALOG, s.plan, s.profiles), CATALOG, s.pantry, []);
     const prices = [{ id: 'p', ingredientId: 'boeuf_hache', store: 'lidl' as const, price: 10, perQty: 1, perUnit: 'kg' as const, date: '2026-09-20' }];
     const est = estimateBudget(list.items, prices, CATALOG, null);
@@ -109,9 +109,9 @@ describe('notes et historique', () => {
   it('« Nouvelle semaine » archive les recettes cuisinées et les notes survivent à l’export', () => {
     const reduce = reducer(CATALOG);
     let s = defaultState();
-    s = reduce(s, { type: 'setRecipe', slot: 'sam-diner', recipeId: 'chili_con_carne' });
-    s = reduce(s, { type: 'reserveLeftovers', source: 'sam-diner', targets: ['lun-dejeuner'] });
-    s = reduce(s, { type: 'setRecipe', slot: 'dim-diner', recipeId: 'pot_au_feu' });
+    s = reduce(s, { type: 'setRecipe', slot: 'd0-diner', recipeId: 'chili_con_carne' });
+    s = reduce(s, { type: 'reserveLeftovers', source: 'd0-diner', targets: ['d2-dejeuner'] });
+    s = reduce(s, { type: 'setRecipe', slot: 'd1-diner', recipeId: 'pot_au_feu' });
     s = reduce(s, { type: 'rateRecipe', recipeId: 'chili_con_carne', value: 1 });
     s = reduce(s, { type: 'rateRecipe', recipeId: 'moussaka', value: -1 });
     s = reduce(s, { type: 'newWeek', weekOf: '2026-10-03' });
@@ -121,5 +121,55 @@ describe('notes et historique', () => {
     expect(back.history).toEqual(s.history);
     s = reduce(s, { type: 'rateRecipe', recipeId: 'moussaka', value: 0 });
     expect(s.ratings.moussaka).toBeUndefined();
+  });
+});
+
+describe('durée du planning', () => {
+  const reduce = reducer(CATALOG);
+
+  it('va du dimanche au dimanche par défaut et se redimensionne sans perdre les repas gardés', () => {
+    let s = defaultState();
+    expect(s.plan.days).toBe(8);
+    expect(new Date(s.plan.weekOf + 'T12:00:00').getDay()).toBe(0);
+    s = reduce(s, { type: 'setRecipe', slot: 'd1-diner', recipeId: 'chili_con_carne' });
+    s = reduce(s, { type: 'reserveLeftovers', source: 'd1-diner', targets: ['d6-dejeuner'] });
+    s = reduce(s, { type: 'setPlanDays', days: 4 });
+    expect(Object.keys(s.plan.slots)).toHaveLength(8);
+    expect(s.plan.slots['d1-diner'].recipeId).toBe('chili_con_carne');
+    expect(leftoverTargets(s.plan, 'd1-diner')).toEqual([]);
+    s = reduce(s, { type: 'setPlanDays', days: 10 });
+    expect(Object.keys(s.plan.slots)).toHaveLength(20);
+    expect(s.plan.slots['d9-diner'].recipeId).toBeNull();
+    // Les repas hors planning sont ignorés sans erreur.
+    expect(reduce(s, { type: 'setRecipe', slot: 'd12-diner', recipeId: 'chili_con_carne' })).toBe(s);
+  });
+
+  it('place les jours de préparation sur le samedi et le dimanche précédents', () => {
+    const s = defaultState(); // dimanche → dimanche, batch samedi + dimanche
+    expect(s.plan.slots['d0-diner'].prepDay).toBe('d0');
+    expect(s.plan.slots['d5-diner'].prepDay).toBe('d0');
+    expect(s.plan.slots['d6-dejeuner'].prepDay).toBe('d6'); // samedi
+    expect(s.plan.slots['d7-diner'].prepDay).toBe('d7'); // dimanche suivant
+  });
+
+  it('reprend un ancien planning samedi → mercredi', () => {
+    const old = {
+      settings: { prepDays: ['sam', 'dim'] },
+      plan: {
+        weekOf: '2026-09-26',
+        slots: {
+          'sam-diner': { recipeId: 'chili_con_carne', prepDay: 'sam' },
+          'lun-dejeuner': { leftoverOf: 'sam-diner', prepDay: 'sam' },
+          'mer-diner': { recipeId: 'pot_au_feu', prepDay: 'dim' },
+        },
+      },
+    };
+    const s = normalizeState(old, CATALOG);
+    expect(s.plan.days).toBe(5);
+    expect(s.plan.weekOf).toBe('2026-09-26');
+    expect(s.settings.prepWeekdays).toEqual([0, 6]);
+    expect(s.plan.slots['d0-diner'].recipeId).toBe('chili_con_carne');
+    expect(s.plan.slots['d2-dejeuner'].leftoverOf).toBe('d0-diner');
+    expect(s.plan.slots['d4-diner']).toMatchObject({ recipeId: 'pot_au_feu', prepDay: 'd1' });
   });
 });

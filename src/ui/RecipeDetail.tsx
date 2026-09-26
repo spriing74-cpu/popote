@@ -1,32 +1,30 @@
 import { useState } from 'react';
 import type { ProfileId, Recipe, RecipeIngredient, SlotId } from '../domain/types';
-import { INGREDIENTS } from '../data/ingredients';
 import { recipeAllergens } from '../data/catalog';
 import { ALLERGEN_LABELS } from '../data/aisles';
 import { scaledQty } from '../domain/portions';
 import { formatQty, toIngredientUnit } from '../domain/units';
-import { PROFILE_IDS, SLOT_IDS, effectiveRecipeId, slotLabel } from '../domain/week';
+import { PROFILE_IDS, effectiveRecipeId, slotIds, slotLabel } from '../domain/week';
 import { useCatalog, useStore } from '../state/store';
-import { COST_LABEL } from './common';
+import { CATEGORY_EMOJI, COST_LABEL, nfr } from './common';
+import { Icon } from './icons';
 import { adviceFor } from '../domain/equipment';
-
-function fmt(ri: RecipeIngredient, qty: number): string {
-  const ing = INGREDIENTS[ri.ingredientId];
-  const v = toIngredientUnit(qty, ri.unit, ing);
-  return v === null ? `${qty} ${ri.unit}` : formatQty(v, ing.unit, ing.pieceLabel);
-}
+import { NUTRITION_SOURCE, portionNutrition } from '../domain/nutrition';
 
 export function RecipeDetail({
   recipeId,
   recipe: given,
   onPick,
   hidePlanning,
+  hideTitle,
 }: {
   recipeId?: string;
   /** Recette non enregistrée (idée vide-frigo) à afficher. */
   recipe?: Recipe;
   onPick?: () => void;
   hidePlanning?: boolean;
+  /** Le titre est déjà affiché au-dessus (fiche repas). */
+  hideTitle?: boolean;
 }) {
   const { state, dispatch } = useStore();
   const catalog = useCatalog();
@@ -37,65 +35,66 @@ export function RecipeDetail({
   const allergens = recipeAllergens(recipe);
   const advice = adviceFor(recipe, state.equipment, 2);
   const fav = state.favorites.includes(recipe.id);
+  const rating = state.ratings[recipe.id];
+  const inCatalog = !!catalog.recipes[recipe.id];
   const qtyFor = (ri: RecipeIngredient, p: ProfileId) => scaledQty(ri, state.profiles[p].factors, 1);
+  const fmt = (ri: RecipeIngredient, qty: number) => {
+    const ing = catalog.ingredients[ri.ingredientId];
+    const v = toIngredientUnit(qty, ri.unit, ing);
+    return v === null ? `${qty} ${ri.unit}` : formatQty(v, ing.unit, ing.pieceLabel);
+  };
+  const nutrition = state.settings.showNutrition ? PROFILE_IDS.map((p) => ({ p, n: portionNutrition(recipe, state.profiles[p].factors, catalog) })) : [];
 
   return (
     <div className="recipe-detail">
-      <h2>{recipe.name}</h2>
+      {!hideTitle && (
+        <div className="row gap align-center">
+          <span className="hero-emoji" aria-hidden>
+            {CATEGORY_EMOJI[recipe.category] ?? '🍽️'}
+          </span>
+          <h2 style={{ margin: 0 }}>{recipe.name}</h2>
+        </div>
+      )}
       {recipe.imageUrl && <img className="recipe-photo" src={recipe.imageUrl} alt="" loading="lazy" />}
       <p>{recipe.summary}</p>
-      <div className="row gap wrap">
-        {recipe.videoUrl && (
-          <a className="btn primary" href={recipe.videoUrl} target="_blank" rel="noreferrer">
-            ▶ Voir la vidéo
-          </a>
-        )}
-        <a className="btn" href={youtubeSearchUrl(recipe.name)} target="_blank" rel="noreferrer">
-          ▶ Vidéos sur YouTube
-        </a>
-        {recipe.source && (
-          <a className="btn" href={recipe.source.url} target="_blank" rel="noreferrer">
-            Source : {recipe.source.name} ↗
-          </a>
-        )}
+
+      <div className="stats">
+        <div className="stat">
+          <b>{recipe.activeMin} min</b>
+          <span>actives</span>
+        </div>
+        <div className="stat">
+          <b>{recipe.totalMin} min</b>
+          <span>au total</span>
+        </div>
+        <div className="stat">
+          <b>{COST_LABEL[recipe.costLevel]}</b>
+          <span>{recipe.temperature === 'froid' ? 'se mange froid' : recipe.temperature === 'chaud' ? 'se mange chaud' : 'chaud ou froid'}</span>
+        </div>
       </div>
-      <p className="meta">
-        <span>⏱ {recipe.activeMin} min actives</span>
-        <span>{recipe.totalMin} min au total</span>
-        <span>Coût relatif {COST_LABEL[recipe.costLevel]}</span>
-        <span>{recipe.temperature === 'froid' ? 'Se mange froid' : recipe.temperature === 'chaud' ? 'Se mange chaud' : 'Chaud ou froid'}</span>
-      </p>
-      <div className="row gap">
-        <button className="btn" onClick={() => dispatch({ type: 'toggleFavorite', recipeId: recipe.id })}>
+
+      <div className="chips">
+        {onPick && (
+          <button className="btn primary" onClick={onPick}>
+            <Icon name="check" size={18} /> Choisir ce plat
+          </button>
+        )}
+        <button className={fav ? 'chip active' : 'chip'} onClick={() => dispatch({ type: 'toggleFavorite', recipeId: recipe.id })} aria-pressed={fav}>
           {fav ? '★ Favori' : '☆ Favori'}
         </button>
-        {catalog.recipes[recipe.id] && (
+        {inCatalog && (
           <>
-            <button
-              className={state.ratings[recipe.id] === 1 ? 'btn primary' : 'btn'}
-              aria-pressed={state.ratings[recipe.id] === 1}
-              onClick={() => dispatch({ type: 'rateRecipe', recipeId: recipe.id, value: state.ratings[recipe.id] === 1 ? 0 : 1 })}
-            >
+            <button className={rating === 1 ? 'chip active' : 'chip'} aria-pressed={rating === 1} onClick={() => dispatch({ type: 'rateRecipe', recipeId: recipe.id, value: rating === 1 ? 0 : 1 })}>
               👍 On aime
             </button>
-            <button
-              className={state.ratings[recipe.id] === -1 ? 'btn danger-soft' : 'btn'}
-              aria-pressed={state.ratings[recipe.id] === -1}
-              onClick={() => dispatch({ type: 'rateRecipe', recipeId: recipe.id, value: state.ratings[recipe.id] === -1 ? 0 : -1 })}
-            >
+            <button className={rating === -1 ? 'chip active' : 'chip'} aria-pressed={rating === -1} onClick={() => dispatch({ type: 'rateRecipe', recipeId: recipe.id, value: rating === -1 ? 0 : -1 })}>
               👎 Plus jamais
             </button>
           </>
         )}
-        {onPick && (
-          <button className="btn primary" onClick={onPick}>
-            Choisir cette recette
-          </button>
-        )}
       </div>
 
-      <h3>Ingrédients — 1 portion chacun</h3>
-      <p className="muted small">Quantités crues, calculées avec les réglages de chaque profil. Accompagnement éventuel en plus.</p>
+      <h3>Ingrédients · 1 portion chacun</h3>
       <table className="qty-table">
         <thead>
           <tr>
@@ -119,12 +118,57 @@ export function RecipeDetail({
           ))}
         </tbody>
       </table>
+      <p className="muted small">Quantités crues, ajustées au profil de chacun (Réglages › Foyer).</p>
 
       {recipe.suggestedSides.length > 0 && (
-        <p>
+        <p className="small">
           <strong>Accompagnements conseillés :</strong> {recipe.suggestedSides.map((s) => catalog.sides[s].name).join(', ')}.
-          <span className="muted"> Chacun peut choisir le sien dans le planning.</span>
         </p>
+      )}
+
+      {nutrition.length > 0 && (
+        <details className="fold">
+          <summary>Repères nutritionnels (indicatifs)</summary>
+          <table className="qty-table">
+            <thead>
+              <tr>
+                <th>Par portion, sans accompagnement</th>
+                {nutrition.map(({ p }) => (
+                  <th key={p}>{state.profiles[p].name}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {(
+                [
+                  ['Énergie', 'kcal', 'kcal', 0],
+                  ['Protéines', 'proteines', 'g', 0],
+                  ['Glucides', 'glucides', 'g', 0],
+                  ['Lipides', 'lipides', 'g', 0],
+                  ['Fibres', 'fibres', 'g', 0],
+                  ['Sel', 'sel', 'g', 1],
+                ] as const
+              ).map(([label, key, unit, digits]) => (
+                <tr key={key}>
+                  <td>{label}</td>
+                  {nutrition.map(({ p, n }) => (
+                    <td key={p}>
+                      ≈ {nfr(n[key], digits)} {unit}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <p className="muted small">
+            Estimation à partir des ingrédients crus de la{' '}
+            <a href={NUTRITION_SOURCE.url} target="_blank" rel="noreferrer">
+              table Ciqual (Anses)
+            </a>
+            , hors huile de cuisson absorbée et accompagnement. Un repère, pas un objectif : les besoins dépendent de chacun.
+            {nutrition[0].n.missing.length > 0 && ` Non comptés : ${nutrition[0].n.missing.join(', ').toLowerCase()}.`}
+          </p>
+        </details>
       )}
 
       {advice.length > 0 && (
@@ -153,31 +197,47 @@ export function RecipeDetail({
         ))}
       </ol>
 
-      <h3>Conservation</h3>
-      <p>
-        {recipe.storageTips} <span className="muted">(repère : {recipe.fridgeDays} j au réfrigérateur{recipe.freezable ? ', congelable' : ', ne se congèle pas bien'})</span>
-      </p>
-      {recipe.transportTips && (
-        <>
-          <h3>Transport</h3>
-          <p>{recipe.transportTips}</p>
-        </>
-      )}
+      <div className="chips">
+        {recipe.videoUrl && (
+          <a className="btn primary small" href={recipe.videoUrl} target="_blank" rel="noreferrer">
+            <Icon name="play" size={16} /> Vidéo
+          </a>
+        )}
+        <a className="btn small" href={youtubeSearchUrl(recipe.name)} target="_blank" rel="noreferrer">
+          <Icon name="play" size={16} /> Vidéos YouTube
+        </a>
+        {recipe.source && (
+          <a className="btn small" href={recipe.source.url} target="_blank" rel="noreferrer">
+            <Icon name="external" size={16} /> {recipe.source.name}
+          </a>
+        )}
+      </div>
 
-      <h3>Allergènes connus</h3>
-      <p>{allergens.length ? allergens.map((a) => ALLERGEN_LABELS[a]).join(', ') : 'Aucun des 14 allergènes majeurs dans les ingrédients listés.'}</p>
-      <p className="muted small">Déduits des ingrédients génériques : vérifiez toujours les étiquettes des produits achetés.</p>
+      <details className="fold">
+        <summary>Conservation, transport, allergènes</summary>
+        <p className="small">
+          {recipe.storageTips}{' '}
+          <span className="muted">
+            (repère : {recipe.fridgeDays} j au réfrigérateur{recipe.freezable ? ', congelable' : ', ne se congèle pas bien'})
+          </span>
+        </p>
+        {recipe.transportTips && <p className="small">{recipe.transportTips}</p>}
+        <p className="small">
+          <strong>Allergènes :</strong> {allergens.length ? allergens.map((a) => ALLERGEN_LABELS[a]).join(', ') : 'aucun des 14 allergènes majeurs dans les ingrédients listés'}.
+          <span className="muted"> Vérifiez toujours les étiquettes.</span>
+        </p>
+      </details>
 
-      {!onPick && !hidePlanning && (
+      {!onPick && !hidePlanning && inCatalog && (
         <div className="card">
-          <h3>Ajouter au planning</h3>
+          <h3>Ajouter à la semaine</h3>
           <select value={target} onChange={(e) => setTarget(e.target.value as SlotId)}>
             <option value="">Choisir un repas…</option>
-            {SLOT_IDS.map((id) => {
+            {slotIds(state.plan).map((id) => {
               const cur = effectiveRecipeId(state.plan, id);
               return (
                 <option key={id} value={id}>
-                  {slotLabel(id)} {cur ? `— remplace : ${catalog.recipes[cur]?.name ?? ''}` : '— libre'}
+                  {slotLabel(state.plan, id)} {cur ? `— remplace : ${catalog.recipes[cur]?.name ?? ''}` : '— libre'}
                 </option>
               );
             })}
@@ -188,13 +248,13 @@ export function RecipeDetail({
             onClick={() => {
               if (!target) return;
               dispatch({ type: 'setRecipe', slot: target, recipeId: recipe.id });
-              setAdded(slotLabel(target));
+              setAdded(slotLabel(state.plan, target));
               setTarget('');
             }}
           >
             Ajouter
           </button>
-          {added && <p className="note ok">✓ Ajouté à {added.toLowerCase()}.</p>}
+          {added && <p className="note ok">✓ Ajouté : {added.toLowerCase()}.</p>}
         </div>
       )}
     </div>
