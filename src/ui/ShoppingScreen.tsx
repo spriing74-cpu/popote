@@ -6,6 +6,7 @@ import { buildShoppingList, groupByAisle, type ShoppingItem } from '../domain/sh
 import { STORE_LABELS, compareStores, estimateBudget, formatEuro } from '../domain/budget';
 import { slotLabel } from '../domain/week';
 import { inventoryAsPantry, todayIso } from '../domain/inventory';
+import { INSEE_SOURCE, REFERENCE_PRICES } from '../data/referencePrices';
 import { useCatalog, useStore } from '../state/store';
 import { Toggle, uid } from './common';
 
@@ -25,7 +26,7 @@ export function ShoppingScreen() {
   }, [state.plan, state.profiles, state.pantry, state.manualItems, state.inventory, state.settings.deductInventory, catalog]);
   const groups = groupByAisle(list.items, AISLE_ORDER);
   const checkedCount = list.items.filter((i) => state.checked[i.key]).length;
-  const budget = estimateBudget(list.items, state.prices, catalog, state.settings.preferredStore);
+  const budget = estimateBudget(list.items, state.prices, catalog, state.settings.preferredStore, REFERENCE_PRICES);
   const comparison = compareStores(list.items, state.prices, catalog);
 
   const addManual = () => {
@@ -126,7 +127,7 @@ export function ShoppingScreen() {
       <section className="card">
         <h3>Budget indicatif</h3>
         {budget.pricedCount === 0 ? (
-          <p>Aucun prix saisi pour ces articles. Touchez un article puis « Saisir un prix » : seuls vos prix sont utilisés, aucun n’est inventé.</p>
+          <p>Aucun prix connu pour ces articles. Scannez vos tickets (les prix sont retenus par magasin) ou touchez un article puis « Saisir un prix ». Aucun prix n’est inventé.</p>
         ) : (
           <>
             <p className="big">
@@ -134,13 +135,28 @@ export function ShoppingScreen() {
               <span className="muted small"> pour {budget.pricedCount} article(s) sur {budget.pricedCount + budget.missing.length}</span>
             </p>
             {budget.missing.length > 0 && <p className="muted small">Sans prix : {budget.missing.join(', ')}. Le total est donc incomplet.</p>}
-            {budget.oldestDate && <p className="muted small">Prix saisis par vous, le plus ancien le {new Date(budget.oldestDate).toLocaleDateString('fr-FR')}.</p>}
+            <ul className="plain small">
+              {budget.byOrigin.magasin > 0 && (
+                <li>• {budget.byOrigin.magasin} au prix de vos relevés {state.settings.preferredStore ? `chez ${STORE_LABELS[state.settings.preferredStore]}` : ''}</li>
+              )}
+              {budget.byOrigin.autre_magasin > 0 && <li>• {budget.byOrigin.autre_magasin} au prix de vos relevés {state.settings.preferredStore ? 'dans un autre magasin' : '(tickets, saisies)'}</li>}
+              {budget.byOrigin.insee > 0 && (
+                <li>
+                  • {budget.byOrigin.insee} à la moyenne nationale{' '}
+                  <a href={INSEE_SOURCE.url} target="_blank" rel="noreferrer">
+                    INSEE
+                  </a>{' '}
+                  ({budget.inseePeriod ? new Date(budget.inseePeriod + '-15').toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }) : ''}), pas un prix local
+                </li>
+              )}
+            </ul>
+            {budget.oldestDate && <p className="muted small">Votre relevé le plus ancien utilisé date du {new Date(budget.oldestDate).toLocaleDateString('fr-FR')}.</p>}
           </>
         )}
         <h3>Comparer Auchan / E.Leclerc / Lidl</h3>
         {comparison.length < 2 ? (
           <p className="note info">
-            Comparaison non disponible : l’application n’intègre aucune source de prix récente et localisée pour ces enseignes. Vous pouvez saisir vos propres relevés de prix par magasin ; la comparaison apparaîtra dès que deux magasins auront des prix.
+            Comparaison pas encore possible : Auchan, E.Leclerc et Lidl ne publient pas leurs prix, et la base ouverte Open Prices ne contient presque rien autour de Castres. Scannez vos tickets de chaque magasin (ou importez vos relevés dans Réglages) : la comparaison apparaîtra dès que deux magasins auront des prix.
           </p>
         ) : (
           <table className="qty-table">
@@ -230,7 +246,7 @@ function PriceForm({ ingredientId }: { ingredientId: string }) {
     const p = parseFloat(price.replace(',', '.'));
     const q = parseFloat(perQty.replace(',', '.'));
     if (!(p > 0) || !(q > 0)) return;
-    dispatch({ type: 'addPrice', entry: { id: uid(), ingredientId, store, price: p, perQty: q, perUnit, date: new Date().toISOString().slice(0, 10) } });
+    dispatch({ type: 'addPrice', entry: { id: uid(), ingredientId, store, price: p, perQty: q, perUnit, date: new Date().toISOString().slice(0, 10), source: 'saisie' } });
     setPrice('');
   };
 

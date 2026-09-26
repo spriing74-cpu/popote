@@ -9,6 +9,9 @@ import { formatAmount } from '../domain/units';
 import { DAYS, DAY_LABELS, PROFILE_IDS } from '../domain/week';
 import { exportJson, parseImport } from '../state/persistence';
 import { useStore } from '../state/store';
+import { parsePriceCsv } from '../domain/priceImport';
+import { todayIso } from '../domain/inventory';
+import { INSEE_SOURCE, REFERENCE_PRICES } from '../data/referencePrices';
 import { Chip, Stepper, Toggle, portionLabel } from './common';
 
 const FACTOR_LABELS: { key: keyof RoleFactors; label: string }[] = [
@@ -205,23 +208,7 @@ export function SettingsScreen() {
         </button>
       </section>
 
-      <section className="card">
-        <h3>Prix saisis</h3>
-        {state.prices.length === 0 ? (
-          <p className="muted small">Aucun. Ajoutez-les depuis la liste de courses (touchez un article).</p>
-        ) : (
-          <ul className="plain small">
-            {state.prices.map((p) => (
-              <li key={p.id}>
-                {CATALOG.ingredients[p.ingredientId].name} — {STORE_LABELS[p.store]} : {formatEuro(p.price)} / {p.perQty} {p.perUnit} ({new Date(p.date).toLocaleDateString('fr-FR')})
-                <button className="btn-link" onClick={() => dispatch({ type: 'removePrice', id: p.id })}>
-                  supprimer
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+      <PricesCard />
 
       <section className="card">
         <h3>Transport et conservation</h3>
@@ -397,6 +384,98 @@ function PantryCard() {
           </button>
         </div>
       )}
+    </section>
+  );
+}
+
+const SOURCE_LABELS = { saisie: 'saisi', ticket: 'ticket', import: 'importé' } as const;
+
+function PricesCard() {
+  const { state, dispatch } = useStore();
+  const [text, setText] = useState('');
+  const [store, setStore] = useState<StoreId>(state.settings.preferredStore ?? 'leclerc');
+  const [report, setReport] = useState<string[] | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [showAll, setShowAll] = useState(false);
+  const sorted = [...state.prices].sort((a, b) => b.date.localeCompare(a.date));
+  const shown = showAll ? sorted : sorted.slice(0, 15);
+
+  const runImport = (csv: string) => {
+    const { entries, errors } = parsePriceCsv(csv, CATALOG, state.aliases, store, todayIso());
+    if (entries.length) dispatch({ type: 'addPrices', entries });
+    setReport([`${entries.length} prix importé(s).`, ...errors.slice(0, 8), ...(errors.length > 8 ? [`… et ${errors.length - 8} autre(s) ligne(s) ignorée(s).`] : [])]);
+    if (entries.length) setText('');
+  };
+
+  return (
+    <section className="card">
+      <h3>Prix</h3>
+      <p className="muted small">
+        Utilisés dans l’ordre : vos relevés du magasin habituel, vos autres relevés, puis la moyenne nationale{' '}
+        <a href={INSEE_SOURCE.url} target="_blank" rel="noreferrer">
+          INSEE
+        </a>{' '}
+        ({REFERENCE_PRICES.length} produits, mis à jour le {new Date(INSEE_SOURCE.fetchedAt).toLocaleDateString('fr-FR')}).
+      </p>
+      {sorted.length === 0 ? (
+        <p className="muted small">Aucun relevé personnel. Scannez un ticket (Frigo › Ticket), saisissez un prix depuis la liste de courses, ou importez un fichier ci-dessous.</p>
+      ) : (
+        <>
+          <ul className="plain small">
+            {shown.map((p) => (
+              <li key={p.id}>
+                {CATALOG.ingredients[p.ingredientId].name} — {STORE_LABELS[p.store]} : {formatEuro(p.price)} / {p.perQty} {p.perUnit} ({new Date(p.date).toLocaleDateString('fr-FR')}, {SOURCE_LABELS[p.source ?? 'saisie']})
+                <button className="btn-link" onClick={() => dispatch({ type: 'removePrice', id: p.id })}>
+                  supprimer
+                </button>
+              </li>
+            ))}
+          </ul>
+          {sorted.length > 15 && (
+            <button className="btn-link" onClick={() => setShowAll((v) => !v)}>
+              {showAll ? 'Réduire' : `Voir les ${sorted.length} relevés`}
+            </button>
+          )}
+        </>
+      )}
+      <div className="field">
+        <span>Importer des relevés (CSV ou copier-coller)</span>
+        <p className="muted small">Une ligne par prix : produit ; prix ; quantité ; unité ; magasin ; date — ex. « Filets de poulet;11,90;1;kg;Leclerc;2026-09-26 ». Seuls produit et prix sont obligatoires.</p>
+        <textarea rows={4} value={text} placeholder={'Courgettes;2,49;1;kg\nLait demi-écrémé;1,05;1;l;Auchan'} onChange={(e) => setText(e.target.value)} />
+        <div className="row gap wrap">
+          <select value={store} onChange={(e) => setStore(e.target.value as StoreId)} aria-label="Magasin par défaut">
+            {(Object.keys(STORE_LABELS) as StoreId[]).map((s) => (
+              <option key={s} value={s}>
+                {STORE_LABELS[s]} (par défaut)
+              </option>
+            ))}
+          </select>
+          <button className="btn primary" disabled={!text.trim()} onClick={() => runImport(text)}>
+            Importer le texte
+          </button>
+          <button className="btn" onClick={() => fileRef.current?.click()}>
+            Fichier CSV…
+          </button>
+          <input
+            ref={fileRef}
+            type="file"
+            accept=".csv,text/csv,text/plain"
+            hidden
+            onChange={async (e) => {
+              const f = e.target.files?.[0];
+              if (f) runImport(await f.text());
+              e.target.value = '';
+            }}
+          />
+        </div>
+        {report && (
+          <ul className="plain small note info">
+            {report.map((r, i) => (
+              <li key={i}>{r}</li>
+            ))}
+          </ul>
+        )}
+      </div>
     </section>
   );
 }

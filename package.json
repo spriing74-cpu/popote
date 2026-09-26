@@ -8,13 +8,14 @@
     "scan-assets": "node scripts/copy-scan-assets.mjs",
     "predev": "node scripts/copy-scan-assets.mjs",
     "dev": "vite",
-    "prebuild": "node scripts/copy-scan-assets.mjs",
+    "prebuild": "node scripts/copy-scan-assets.mjs && node scripts/fetch-insee-prices.mjs",
     "build": "tsc --noEmit -p tsconfig.json && vite build",
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "icons": "node scripts/generate-icons.mjs"
+    "icons": "node scripts/generate-icons.mjs",
+    "prices": "node scripts/fetch-insee-prices.mjs"
   },
   "dependencies": {
     "@tesseract.js-data/fra": "^1.0.0",

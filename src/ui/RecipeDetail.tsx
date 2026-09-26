@@ -40,7 +40,23 @@ export function RecipeDetail({
   return (
     <div className="recipe-detail">
       <h2>{recipe.name}</h2>
+      {recipe.imageUrl && <img className="recipe-photo" src={recipe.imageUrl} alt="" loading="lazy" />}
       <p>{recipe.summary}</p>
+      <div className="row gap wrap">
+        {recipe.videoUrl && (
+          <a className="btn primary" href={recipe.videoUrl} target="_blank" rel="noreferrer">
+            ▶ Voir la vidéo
+          </a>
+        )}
+        <a className="btn" href={youtubeSearchUrl(recipe.name)} target="_blank" rel="noreferrer">
+          ▶ Vidéos sur YouTube
+        </a>
+        {recipe.source && (
+          <a className="btn" href={recipe.source.url} target="_blank" rel="noreferrer">
+            Source : {recipe.source.name} ↗
+          </a>
+        )}
+      </div>
       <p className="meta">
         <span>⏱ {recipe.activeMin} min actives</span>
         <span>{recipe.totalMin} min au total</span>
@@ -144,4 +160,9 @@ export function RecipeDetail({
       )}
     </div>
   );
+}
+
+/** Recherche YouTube de la recette : toujours valable, sans clé d'API ni lien qui pourrait disparaître. */
+export function youtubeSearchUrl(name: string): string {
+  return `https://www.youtube.com/results?search_query=${encodeURIComponent(`recette ${name.replace(/\s*\(.*?\)/g, '')}`)}`;
 }

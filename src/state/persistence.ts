@@ -20,9 +20,9 @@ const UNITS: Unit[] = ['g', 'kg', 'ml', 'cl', 'l', 'cc', 'cs', 'pc'];
 const isUnit = (u: unknown): u is Unit => typeof u === 'string' && (UNITS as string[]).includes(u);
 const isIsoDate = (d: unknown): d is string => typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d);
 
-/** Recette vide-frigo importée : on ne garde que des données valides et convertibles. */
+/** Recette personnelle (vide-frigo « vf- » ou importée « mdb- ») : on ne garde que des données valides et convertibles. */
 function normalizeRecipe(r: Loose, catalog: Catalog): Recipe | null {
-  if (typeof r.id !== 'string' || !r.id.startsWith('vf-') || typeof r.name !== 'string' || !Array.isArray(r.ingredients)) return null;
+  if (typeof r.id !== 'string' || !/^(vf|mdb)-/.test(r.id) || typeof r.name !== 'string' || !Array.isArray(r.ingredients)) return null;
   const ingredients: RecipeIngredient[] = [];
   for (const x of r.ingredients) {
     if (!isObj(x) || typeof x.ingredientId !== 'string' || !catalog.ingredients[x.ingredientId] || !isUnit(x.unit) || typeof x.qty !== 'number' || !(x.qty > 0)) return null;
@@ -54,6 +54,9 @@ function normalizeRecipe(r: Loose, catalog: Catalog): Recipe | null {
     leftoverFriendly: r.leftoverFriendly !== false,
     vegetarian: r.vegetarian === true,
     tags: arr(r.tags, isStr),
+    videoUrl: typeof r.videoUrl === 'string' && r.videoUrl.startsWith('https://www.youtube.com/') ? r.videoUrl : undefined,
+    source: isObj(r.source) && typeof r.source.url === 'string' && /^https?:\/\//.test(r.source.url) ? { name: str(r.source.name, 'Source'), url: r.source.url } : undefined,
+    imageUrl: typeof r.imageUrl === 'string' && r.imageUrl.startsWith('https://') ? r.imageUrl : undefined,
   };
 }
 
@@ -185,6 +188,7 @@ export function normalizeState(raw: unknown, baseCatalog: Catalog): AppState {
           perQty: num(p.perQty, 1),
           perUnit: (typeof p.perUnit === 'string' ? p.perUnit : 'kg') as AppState['prices'][number]['perUnit'],
           date: str(p.date, new Date().toISOString().slice(0, 10)),
+          source: (p.source === 'ticket' || p.source === 'import' ? p.source : 'saisie') as 'ticket' | 'import' | 'saisie',
         }))
     : [];
 

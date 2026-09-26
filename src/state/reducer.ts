@@ -42,6 +42,7 @@ export type Action =
   | { type: 'toggleChecked'; key: string }
   | { type: 'clearChecked' }
   | { type: 'addPrice'; entry: PriceEntry }
+  | { type: 'addPrices'; entries: PriceEntry[] }
   | { type: 'removePrice'; id: string }
   | { type: 'toggleFavorite'; recipeId: string }
   | { type: 'addInventory'; items: InventoryItem[] }
@@ -161,6 +162,8 @@ export function reducer(baseCatalog: Catalog) {
         return { ...state, checked: {} };
       case 'addPrice':
         return { ...state, prices: [...state.prices, action.entry] };
+      case 'addPrices':
+        return { ...state, prices: [...state.prices, ...action.entries] };
       case 'removePrice':
         return { ...state, prices: state.prices.filter((p) => p.id !== action.id) };
       case 'toggleFavorite':

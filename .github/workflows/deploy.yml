@@ -4,6 +4,9 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+  # Chaque 20 du mois : republie avec les derniers prix moyens INSEE.
+  schedule:
+    - cron: '0 6 20 * *'
 
 permissions:
   contents: read

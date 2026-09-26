@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
-import type { InventoryItem, StorageLocation, Unit } from '../domain/types';
+import type { InventoryItem, PriceEntry, StorageLocation, StoreId, Unit } from '../domain/types';
+import { STORE_LABELS, formatEuro } from '../domain/budget';
 import { INGREDIENTS } from '../data/ingredients';
 import { parseReceipt } from '../domain/receipt';
 import { bestMatch } from '../domain/matching';
@@ -22,6 +23,8 @@ interface Row {
   unit: Unit;
   location: StorageLocation;
   expiry: string;
+  /** Prix payé pour la ligne (lu sur le ticket). */
+  price: number | null;
 }
 
 const INGREDIENT_OPTIONS = Object.values(INGREDIENTS).sort((a, b) => a.name.localeCompare(b.name, 'fr'));
@@ -36,7 +39,8 @@ export function ReceiptScanner({ onClose }: { onClose: () => void }) {
   const [progress, setProgress] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showText, setShowText] = useState(false);
-  const [done, setDone] = useState<number | null>(null);
+  const [done, setDone] = useState<{ items: number; prices: number } | null>(null);
+  const [store, setStore] = useState<StoreId>(state.settings.preferredStore ?? 'leclerc');
   const fileRef = useRef<HTMLInputElement>(null);
 
   const readPhoto = async (file: File) => {
@@ -68,6 +72,7 @@ export function ReceiptScanner({ onClose }: { onClose: () => void }) {
           unit: q.unit,
           location: loc,
           expiry: estimateExpiry(id, loc, today),
+          price: l.price,
         };
       });
       setRows((r) => [...r, ...newRows]);
@@ -98,6 +103,7 @@ export function ReceiptScanner({ onClose }: { onClose: () => void }) {
   const commit = () => {
     const items: InventoryItem[] = [];
     const aliases: Record<string, string> = {};
+    const prices: PriceEntry[] = [];
     for (const r of selected) {
       const q = parseFloat(r.qty.replace(',', '.'));
       if (!(q > 0)) continue;
@@ -112,23 +118,42 @@ export function ReceiptScanner({ onClose }: { onClose: () => void }) {
         location: r.location,
         addedAt: today,
       });
+      // Prix réel payé dans ce magasin : devient une référence pour le budget.
+      if (r.ingredientId && r.price !== null && r.price > 0) {
+        prices.push({ id: uid(), ingredientId: r.ingredientId, store, price: r.price, perQty: q, perUnit: r.unit, date: today, source: 'ticket' });
+      }
       // Apprend l'abréviation du magasin quand l'utilisateur a corrigé ou confirmé la correspondance.
       if (r.ingredientId) aliases[aliasKey(r.label)] = r.ingredientId;
     }
     if (items.length === 0) return;
     dispatch({ type: 'addInventory', items });
     dispatch({ type: 'learnAliases', entries: aliases });
-    setDone(items.length);
+    if (prices.length) dispatch({ type: 'addPrices', entries: prices });
+    setDone({ items: items.length, prices: prices.length });
     setRows([]);
     setTexts([]);
   };
 
   return (
     <Sheet title="Scanner un ticket" onClose={onClose}>
-      {done !== null && <p className="note ok">✓ {done} produit(s) ajouté(s) au stock. Dates estimées : corrigez-les dans Frigo si besoin (📷 sur l’emballage).</p>}
+      {done !== null && (
+        <p className="note ok">
+          ✓ {done.items} produit(s) ajouté(s) au stock{done.prices > 0 && `, ${done.prices} prix enregistré(s) pour ${STORE_LABELS[store]}`}. Dates estimées : corrigez-les dans Frigo si besoin (📷 sur l’emballage).
+        </p>
+      )}
       <p className="muted small">
         La lecture se fait sur le téléphone, rien n’est envoyé. Les tickets abrègent souvent les noms : vérifiez chaque ligne, l’app retiendra vos corrections pour la prochaine fois.
       </p>
+      <label className="field">
+        <span>Magasin du ticket (les prix lus deviennent vos prix de référence)</span>
+        <select value={store} onChange={(e) => setStore(e.target.value as StoreId)}>
+          {(Object.keys(STORE_LABELS) as StoreId[]).map((s) => (
+            <option key={s} value={s}>
+              {STORE_LABELS[s]}
+            </option>
+          ))}
+        </select>
+      </label>
       <button className="btn primary block" onClick={() => fileRef.current?.click()} disabled={!!progress}>
         📷 {rows.length ? 'Ajouter une photo (suite du ticket)' : 'Photographier le ticket'}
       </button>
@@ -159,6 +184,7 @@ export function ReceiptScanner({ onClose }: { onClose: () => void }) {
                   <input type="checkbox" checked={r.include} onChange={(e) => update(r.key, { include: e.target.checked })} />
                   <span>
                     <span className="mono">{r.label}</span>
+                    {r.price !== null && <span className="muted small"> · {formatEuro(r.price)}</span>}
                     {!r.ingredientId && <span className="badge trop_long">non reconnu</span>}
                     {r.autoMatched && <span className="badge info">reconnu</span>}
                   </span>

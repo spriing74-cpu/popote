@@ -810,3 +810,50 @@ p {
   max-height: 300px;
   overflow: auto;
 }
+.recipe-photo {
+  width: 100%;
+  max-height: 240px;
+  object-fit: cover;
+  border-radius: var(--radius);
+  margin: 8px 0;
+}
+a.btn {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+  color: inherit;
+}
+a.btn.primary {
+  color: var(--primary-text);
+}
+
+.meal-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+.meal-card {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 0 0 8px;
+  overflow: hidden;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.meal-card img {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+}
+.meal-card span {
+  padding: 0 8px;
+}
+.pre-line {
+  white-space: pre-line;
+}

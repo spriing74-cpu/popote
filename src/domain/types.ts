@@ -103,6 +103,11 @@ export interface Recipe {
   leftoverFriendly: boolean;
   vegetarian?: boolean;
   tags?: string[];
+  /** Lien direct vers une vidéo vérifiée (ex. fournie par TheMealDB). */
+  videoUrl?: string;
+  /** Recette importée : origine et lien vers la page d'origine. */
+  source?: { name: string; url: string };
+  imageUrl?: string;
 }
 
 export interface Side {
@@ -209,6 +214,19 @@ export interface PriceEntry {
   perUnit: Unit;
   /** Date ISO de relevé du prix. */
   date: string;
+  /** Origine du prix : saisie manuelle, ticket scanné, import de fichier. */
+  source?: 'saisie' | 'ticket' | 'import';
+}
+
+/** Prix moyen national (INSEE), utilisé seulement à défaut de vos propres prix. */
+export interface ReferencePrice {
+  ingredientId: string;
+  label: string;
+  price: number;
+  perQty: number;
+  perUnit: Unit;
+  /** Mois de l'observation (AAAA-MM). */
+  period: string;
 }
 
 export interface Settings {

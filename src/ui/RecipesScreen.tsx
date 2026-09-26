@@ -5,6 +5,7 @@ import { recipeAllowed, recipeFitsSlot } from '../domain/planner';
 import { useCatalog, useStore } from '../state/store';
 import { COST_LABEL, Chip, Sheet } from './common';
 import { RecipeDetail } from './RecipeDetail';
+import { ExplorerScreen } from './ExplorerScreen';
 import { slotLabel } from '../domain/week';
 
 type Filter = 'boite' | 'diner' | 'rapide' | 'eco' | 'restes' | 'vege' | 'favoris';
@@ -61,6 +62,7 @@ export function RecipesScreen({ pickFor, onPick }: { pickFor?: SlotId; onPick?: 
   const [onlyFitting, setOnlyFitting] = useState(true);
   const [onlyAllowed, setOnlyAllowed] = useState(true);
   const [open, setOpen] = useState<string | null>(null);
+  const [source, setSource] = useState<'popote' | 'explorer'>('popote');
 
   const list = useMemo(() => {
     return Object.values(catalog.recipes).filter((r) => {
@@ -77,6 +79,20 @@ export function RecipesScreen({ pickFor, onPick }: { pickFor?: SlotId; onPick?: 
   return (
     <div className="screen">
       {!pickFor && <h1>Recettes</h1>}
+      {!pickFor && (
+        <div className="segmented" role="tablist">
+          <button role="tab" aria-selected={source === 'popote'} className={source === 'popote' ? 'active' : ''} onClick={() => setSource('popote')}>
+            Popote ({Object.keys(catalog.recipes).length})
+          </button>
+          <button role="tab" aria-selected={source === 'explorer'} className={source === 'explorer' ? 'active' : ''} onClick={() => setSource('explorer')}>
+            🌍 Explorer en ligne
+          </button>
+        </div>
+      )}
+      {source === 'explorer' && !pickFor ? (
+        <ExplorerScreen />
+      ) : (
+        <>
       <input className="search" type="search" placeholder="Rechercher un plat ou un ingrédient (ex. poulet, courgette)…" value={q} onChange={(e) => setQ(e.target.value)} />
       <div className="chips">
         {FILTERS.map((f) => (
@@ -113,6 +129,8 @@ export function RecipesScreen({ pickFor, onPick }: { pickFor?: SlotId; onPick?: 
         ))}
         {list.length === 0 && <p className="empty">Aucune recette ne correspond. Retirez un filtre.</p>}
       </div>
+        </>
+      )}
       {open && (
         <Sheet title="Recette" onClose={() => setOpen(null)}>
           <RecipeDetail recipeId={open} onPick={onPick ? () => onPick(open) : undefined} />

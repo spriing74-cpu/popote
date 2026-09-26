@@ -1,4 +1,9 @@
 import type { Recipe, RecipeIngredient, Role, Unit } from '../domain/types';
+import { RECIPES_FAMILIAL } from './recipes-familial';
+import { RECIPES_MONDE } from './recipes-monde';
+import { RECIPES_LUNCH } from './recipes-lunch';
+import { RECIPES_LEGUMES } from './recipes-legumes';
+import { RECIPES_EXPRESS } from './recipes-express';
 
 // Quantités pour UNE portion adulte standard (poids cru). Les portions de chaque profil
 // sont calculées par le moteur à partir de ces valeurs : ne rien diviser ici.
@@ -1386,5 +1391,6 @@ const list: Recipe[] = [
   },
 ];
 
-export const RECIPES: Record<string, Recipe> = Object.fromEntries(list.map((r) => [r.id, r]));
-export const RECIPE_LIST = list;
+/** Catalogue complet : recettes de base + catalogue étendu (fichiers thématiques). */
+export const RECIPE_LIST: Recipe[] = [...list, ...RECIPES_FAMILIAL, ...RECIPES_MONDE, ...RECIPES_LUNCH, ...RECIPES_LEGUMES, ...RECIPES_EXPRESS];
+export const RECIPES: Record<string, Recipe> = Object.fromEntries(RECIPE_LIST.map((r) => [r.id, r]));

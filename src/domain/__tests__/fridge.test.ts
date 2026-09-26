@@ -254,7 +254,8 @@ describe('anti-gaspi', () => {
     const ranked = rankCatalog(CATALOG, inv, TODAY, defaultSettings());
     expect(ranked.length).toBeGreaterThan(0);
     expect(ranked[0].uses.length).toBeGreaterThanOrEqual(2);
-    expect(ranked.some((r) => r.recipe.id === 'quiche_lorraine' || r.recipe.id === 'gratin_pates_brocoli_jambon')).toBe(true);
+    // Les premières recettes sauvent un produit qui périme sous 2 jours (courgette J-1, champignons J-2).
+    for (const r of ranked.slice(0, 3)) expect(r.uses.some((u) => u.daysLeft !== null && u.daysLeft <= 2)).toBe(true);
   });
 
   it('une recette gardée est planifiable, sauvegardée et réimportée', () => {

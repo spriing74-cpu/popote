@@ -1,0 +1,205 @@
+{
+  "source": "INSEE — Prix moyens mensuels de vente au détail en France métropolitaine (licence ouverte Etalab)",
+  "url": "https://www.insee.fr/fr/statistiques/series/103157792",
+  "fetchedAt": "2026-09-26",
+  "items": [
+    {
+      "ingredientId": "avocat",
+      "label": "Avocat (pièce)",
+      "perQty": 1,
+      "perUnit": "pc",
+      "price": 1.5,
+      "period": "2026-08",
+      "idbank": "001791255"
+    },
+    {
+      "ingredientId": "tomate",
+      "label": "Tomates (1 kg)",
+      "perQty": 1,
+      "perUnit": "kg",
+      "price": 4.26,
+      "period": "2026-08",
+      "idbank": "000641429"
+    },
+    {
+      "ingredientId": "baguette",
+      "label": "Pain baguette (1 kg)",
+      "perQty": 1,
+      "perUnit": "kg",
+      "price": 4.11,
+      "period": "2026-08",
+      "idbank": "000442423"
+    },
+    {
+      "ingredientId": "poireau",
+      "label": "Poireaux (1 kg)",
+      "perQty": 1,
+      "perUnit": "kg",
+      "price": 2.73,
+      "period": "2026-08",
+      "idbank": "000641428"
+    },
+    {
+      "ingredientId": "oignon",
+      "label": "Oignons (1 kg)",
+      "perQty": 1,
+      "perUnit": "kg",
+      "price": 2.85,
+      "period": "2026-08",
+      "idbank": "000641427"
+    },
+    {
+      "ingredientId": "carotte",
+      "label": "Carottes (1 kg)",
+      "perQty": 1,
+      "perUnit": "kg",
+      "price": 2.21,
+      "period": "2026-08",
+      "idbank": "000641422"
+    },
+    {
+      "ingredientId": "champignon",
+      "label": "Champignons de Paris (1 kg)",
+      "perQty": 1,
+      "perUnit": "kg",
+      "price": 6.6,
+      "period": "2026-08",
+      "idbank": "000641423"
+    },
+    {
+      "ingredientId": "porc_filet",
+      "label": "Porc : rôti dans le filet (1 kg)",
+      "perQty": 1,
+      "perUnit": "kg",
+      "price": 13.99,
+      "period": "2026-08",
+      "idbank": "000442448"
+    },
+    {
+      "ingredientId": "chou_fleur",
+      "label": "Chou-fleur (pièce)",
+      "perQty": 1,
+      "perUnit": "pc",
+      "price": 4.58,
+      "period": "2026-08",
+      "idbank": "001791254"
+    },
+    {
+      "ingredientId": "poivron",
+      "label": "Poivrons (1 kg)",
+      "perQty": 1,
+      "perUnit": "kg",
+      "price": 4.87,
+      "period": "2026-08",
+      "idbank": "010596274"
+    },
+    {
+      "ingredientId": "citron",
+      "label": "Citrons (1 kg)",
+      "perQty": 1,
+      "perUnit": "kg",
+      "price": 4.16,
+      "period": "2026-08",
+      "idbank": "000641434"
+    },
+    {
+      "ingredientId": "pomme_de_terre",
+      "label": "Pommes de terre de conservation (1 kg)",
+      "perQty": 1,
+      "perUnit": "kg",
+      "price": 1.94,
+      "period": "2026-08",
+      "idbank": "000641360"
+    },
+    {
+      "ingredientId": "pomme",
+      "label": "Pommes (1 kg)",
+      "perQty": 1,
+      "perUnit": "kg",
+      "price": 3.19,
+      "period": "2026-08",
+      "idbank": "000641367"
+    },
+    {
+      "ingredientId": "endive",
+      "label": "Endives (1 kg)",
+      "perQty": 1,
+      "perUnit": "kg",
+      "price": 4.64,
+      "period": "2026-08",
+      "idbank": "000641426"
+    },
+    {
+      "ingredientId": "jambon_blanc",
+      "label": "Jambon supérieur (1 kg)",
+      "perQty": 1,
+      "perUnit": "kg",
+      "price": 19.85,
+      "period": "2026-08",
+      "idbank": "000849397"
+    },
+    {
+      "ingredientId": "banane",
+      "label": "Bananes (1 kg)",
+      "perQty": 1,
+      "perUnit": "kg",
+      "price": 2.14,
+      "period": "2026-08",
+      "idbank": "000641432"
+    },
+    {
+      "ingredientId": "courgette",
+      "label": "Courgettes (1 kg)",
+      "perQty": 1,
+      "perUnit": "kg",
+      "price": 2.43,
+      "period": "2026-08",
+      "idbank": "000641425"
+    },
+    {
+      "ingredientId": "clementine",
+      "label": "Clémentines (1 kg)",
+      "perQty": 1,
+      "perUnit": "kg",
+      "price": 4.22,
+      "period": "2026-08",
+      "idbank": "000641435"
+    },
+    {
+      "ingredientId": "porc_echine",
+      "label": "Porc : échine avec os (1 kg)",
+      "perQty": 1,
+      "perUnit": "kg",
+      "price": 12.14,
+      "period": "2026-08",
+      "idbank": "000442450"
+    },
+    {
+      "ingredientId": "merlan",
+      "label": "Filet de merlan (1 kg)",
+      "perQty": 1,
+      "perUnit": "kg",
+      "price": 25.37,
+      "period": "2026-08",
+      "idbank": "000641408"
+    },
+    {
+      "ingredientId": "moules",
+      "label": "Moules de bouchot (1 kg)",
+      "perQty": 1,
+      "perUnit": "kg",
+      "price": 6.44,
+      "period": "2026-08",
+      "idbank": "000641418"
+    },
+    {
+      "ingredientId": "haricots_verts_frais",
+      "label": "Haricots verts (1 kg)",
+      "perQty": 1,
+      "perUnit": "kg",
+      "price": 7.57,
+      "period": "2026-08",
+      "idbank": "000641359"
+    }
+  ]
+}

@@ -3,6 +3,8 @@ import type { InventoryItem } from '../domain/types';
 import { lookupBarcode } from '../domain/openfoodfacts';
 import { defaultLocation, defaultQuantity, estimateExpiry, todayIso } from '../domain/inventory';
 import { canUseLiveCamera, detectBarcode } from '../scan/barcode';
+import { CASTRES, fetchOpenPrices, type OpenPricesSummary } from '../domain/openprices';
+import { formatEuro } from '../domain/budget';
 import { loadImage } from '../scan/image';
 import { useCatalog, useStore } from '../state/store';
 import { Sheet } from './common';
@@ -18,6 +20,7 @@ export function BarcodeScanner({ onClose }: { onClose: () => void }) {
   const [error, setError] = useState<string | null>(null);
   const [manual, setManual] = useState('');
   const [added, setAdded] = useState<string[]>([]);
+  const [openPrices, setOpenPrices] = useState<OpenPricesSummary | null | 'chargement'>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const live = canUseLiveCamera();
@@ -28,6 +31,8 @@ export function BarcodeScanner({ onClose }: { onClose: () => void }) {
       setError(null);
       setPhase({ k: 'lookup', code });
       if (navigator.vibrate) navigator.vibrate(60);
+      setOpenPrices('chargement');
+      fetchOpenPrices(code, CASTRES).then(setOpenPrices);
       const known = state.products[code];
       let product = known ?? null;
       let note: string | null = null;
@@ -165,6 +170,7 @@ export function BarcodeScanner({ onClose }: { onClose: () => void }) {
       {phase.k === 'form' && (
         <>
           {phase.note && <p className="note info">{phase.note}</p>}
+          <OpenPricesBox data={openPrices} />
           <ItemForm
             key={phase.code + added.length}
             initial={phase.prefill}
@@ -195,5 +201,33 @@ export function BarcodeScanner({ onClose }: { onClose: () => void }) {
         </>
       )}
     </Sheet>
+  );
+}
+
+function OpenPricesBox({ data }: { data: OpenPricesSummary | null | 'chargement' }) {
+  if (data === 'chargement') return <p className="muted small">Recherche de prix sur Open Prices…</p>;
+  if (!data) return null;
+  const d = (iso: string) => new Date(iso + 'T12:00:00').toLocaleDateString('fr-FR');
+  return (
+    <div className="note info small">
+      <strong>Prix Open Prices</strong> (relevés partagés par des particuliers)
+      {data.nearby.length > 0 ? (
+        <ul className="plain">
+          {data.nearby.map((p, i) => (
+            <li key={i}>
+              {formatEuro(p.price)} — {p.store}
+              {p.city ? `, ${p.city}` : ''} ({p.distanceKm} km) le {d(p.date)}
+            </li>
+          ))}
+        </ul>
+      ) : data.latestElsewhere ? (
+        <p>
+          Aucun relevé à moins de 40 km de Castres. Dernier prix connu en France : {formatEuro(data.latestElsewhere.price)} — {data.latestElsewhere.store}
+          {data.latestElsewhere.city ? `, ${data.latestElsewhere.city}` : ''} le {d(data.latestElsewhere.date)}.
+        </p>
+      ) : (
+        <p>Aucun prix relevé pour ce produit.</p>
+      )}
+    </div>
   );
 }

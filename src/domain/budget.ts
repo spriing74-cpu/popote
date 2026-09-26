@@ -1,4 +1,4 @@
-import type { Catalog, PriceEntry, StoreId } from './types';
+import type { Catalog, PriceEntry, ReferencePrice, StoreId } from './types';
 import type { ShoppingItem } from './shopping';
 import { toIngredientUnit } from './units';
 
@@ -17,7 +17,7 @@ export function latestPrice(prices: PriceEntry[], ingredientId: string, store: S
 }
 
 /** Coût de l'article tel qu'il sera acheté (paquets entiers ou quantité arrondie). */
-export function itemCost(item: ShoppingItem, entry: PriceEntry, catalog: Catalog): number | null {
+export function itemCost(item: ShoppingItem, entry: Pick<PriceEntry, 'price' | 'perQty' | 'perUnit'>, catalog: Catalog): number | null {
   if (!item.ingredientId) return null;
   const ing = catalog.ingredients[item.ingredientId];
   const perBase = toIngredientUnit(entry.perQty, entry.perUnit, ing);
@@ -25,32 +25,69 @@ export function itemCost(item: ShoppingItem, entry: PriceEntry, catalog: Catalog
   return (entry.price * item.purchase.qty) / perBase;
 }
 
+export type PriceOrigin = 'magasin' | 'autre_magasin' | 'insee';
+
 export interface BudgetEstimate {
   total: number;
   pricedCount: number;
-  /** Articles du planning sans prix saisi (ou à l'unité incompatible). */
+  /** Articles du planning sans prix connu (ou à l'unité incompatible). */
   missing: string[];
+  /** Date du relevé personnel le plus ancien utilisé. */
   oldestDate: string | null;
+  /** Nombre d'articles chiffrés par origine du prix. */
+  byOrigin: Record<PriceOrigin, number>;
+  /** Période INSEE utilisée (AAAA-MM), si des moyennes nationales ont servi. */
+  inseePeriod: string | null;
 }
 
-export function estimateBudget(items: ShoppingItem[], prices: PriceEntry[], catalog: Catalog, store: StoreId | null): BudgetEstimate {
+/**
+ * Estimation du budget. Pour chaque article, on prend dans l'ordre :
+ * 1. votre dernier prix dans le magasin choisi (saisi, ticket, import) ;
+ * 2. votre dernier prix dans n'importe quel magasin ;
+ * 3. la moyenne nationale INSEE du mois le plus récent, si elle existe.
+ * Aucun prix n'est inventé : sans l'une de ces sources, l'article est compté « sans prix ».
+ */
+export function estimateBudget(
+  items: ShoppingItem[],
+  prices: PriceEntry[],
+  catalog: Catalog,
+  store: StoreId | null,
+  reference: ReferencePrice[] = [],
+): BudgetEstimate {
   let total = 0;
   let pricedCount = 0;
   const missing: string[] = [];
   let oldestDate: string | null = null;
+  let inseePeriod: string | null = null;
+  const byOrigin: Record<PriceOrigin, number> = { magasin: 0, autre_magasin: 0, insee: 0 };
   for (const item of items) {
     if (item.manual || !item.ingredientId) continue;
-    const entry = latestPrice(prices, item.ingredientId, store);
-    const cost = entry ? itemCost(item, entry, catalog) : null;
-    if (cost === null || !entry) {
-      missing.push(item.label);
-      continue;
+    const candidates: [PriceOrigin, PriceEntry | undefined][] = store
+      ? [['magasin', latestPrice(prices, item.ingredientId, store)], ['autre_magasin', latestPrice(prices, item.ingredientId, null)]]
+      : [['autre_magasin', latestPrice(prices, item.ingredientId, null)]];
+    let done = false;
+    for (const [origin, entry] of candidates) {
+      const cost = entry ? itemCost(item, entry, catalog) : null;
+      if (cost === null || !entry) continue;
+      total += cost;
+      pricedCount += 1;
+      byOrigin[origin] += 1;
+      if (!oldestDate || entry.date < oldestDate) oldestDate = entry.date;
+      done = true;
+      break;
     }
-    total += cost;
-    pricedCount += 1;
-    if (!oldestDate || entry.date < oldestDate) oldestDate = entry.date;
+    if (!done) {
+      const ref = reference.find((r) => r.ingredientId === item.ingredientId);
+      const cost = ref ? itemCost(item, ref, catalog) : null;
+      if (ref && cost !== null) {
+        total += cost;
+        pricedCount += 1;
+        byOrigin.insee += 1;
+        if (!inseePeriod || ref.period > inseePeriod) inseePeriod = ref.period;
+      } else missing.push(item.label);
+    }
   }
-  return { total, pricedCount, missing, oldestDate };
+  return { total, pricedCount, missing, oldestDate, byOrigin, inseePeriod };
 }
 
 /**
@@ -59,7 +96,8 @@ export function estimateBudget(items: ShoppingItem[], prices: PriceEntry[], cata
  */
 export function compareStores(items: ShoppingItem[], prices: PriceEntry[], catalog: Catalog): { store: StoreId; estimate: BudgetEstimate }[] {
   const stores = (['auchan', 'leclerc', 'lidl', 'autre'] as StoreId[]).filter((s) => prices.some((p) => p.store === s));
-  return stores.map((store) => ({ store, estimate: estimateBudget(items, prices, catalog, store) }));
+  // Chaque magasin n'est chiffré qu'avec ses propres prix (pas de repli sur un autre magasin ni sur l'INSEE).
+  return stores.map((store) => ({ store, estimate: estimateBudget(items, prices.filter((p) => p.store === store), catalog, store) }));
 }
 
 export function formatEuro(n: number): string {

@@ -206,7 +206,7 @@ function IdeaSheet({ recipe, onClose }: { recipe: Recipe; onClose: () => void })
         </div>
       )}
       {inCatalog ? <RecipeDetail recipeId={recipe.id} /> : <RecipeDetail recipe={recipe} hidePlanning />}
-      {inCatalog && recipe.id.startsWith('vf-') && (
+      {inCatalog && /^(vf|mdb)-/.test(recipe.id) && (
         <button
           className="btn danger block"
           disabled={Object.values(state.plan.slots).some((s) => s.recipeId === recipe.id)}
