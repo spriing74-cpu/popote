@@ -78,5 +78,7 @@ export function defaultState(): AppState {
     aliases: {},
     customRecipes: [],
     equipment: [],
+    ratings: {},
+    history: [],
   };
 }

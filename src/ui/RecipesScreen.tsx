@@ -37,6 +37,8 @@ export function RecipeCard({ recipe, onOpen, action }: { recipe: Recipe; onOpen:
       <button className="recipe-card-main" onClick={onOpen}>
         <h3>
           {state.favorites.includes(recipe.id) && <span aria-label="favori">★ </span>}
+          {state.ratings[recipe.id] === 1 && <span aria-label="aimée">👍 </span>}
+          {state.ratings[recipe.id] === -1 && <span aria-label="écartée">👎 </span>}
           {recipe.name}
         </h3>
         <p className="muted">{recipe.summary}</p>

@@ -107,3 +107,37 @@ describe('conservation / batch cooking', () => {
     expect(f.status).toBe('ok');
   });
 });
+
+describe('suggestions qui apprennent', () => {
+  const profiles = defaultProfiles();
+  const settings = { ...defaultSettings(), useLeftoversInSuggestions: false };
+  const run = (learning: Parameters<typeof suggestPlan>[5]['learning'], seed = 11) =>
+    SLOT_IDS.map((id) => effectiveRecipeId(suggestPlan(CATALOG, emptyPlan(profiles, settings.prepDays), profiles, settings, [], { seed, onlyEmpty: true, learning }), id)!);
+
+  it('n’écarte jamais une recette notée « plus jamais »', () => {
+    const base = run(undefined);
+    const banned = Object.fromEntries(base.map((id) => [id, -1 as const]));
+    for (let seed = 1; seed <= 10; seed++) {
+      const next = run({ ratings: banned, recentWeeks: [], stockUrgency: {} }, seed);
+      expect(next.filter((id) => banned[id])).toEqual([]);
+    }
+  });
+
+  it('évite les recettes de la semaine dernière', () => {
+    const lastWeek = run(undefined);
+    const next = run({ ratings: {}, recentWeeks: [lastWeek], stockUrgency: {} });
+    expect(next.filter((id) => lastWeek.includes(id)).length).toBeLessThanOrEqual(1);
+  });
+
+  it('favorise les recettes qui écoulent le stock urgent', () => {
+    const stock = { courgette: 4, champignon: 3, creme_liquide: 1.5 };
+    const uses = (ids: string[]) => ids.filter((id) => CATALOG.recipes[id].ingredients.some((i) => i.ingredientId in stock)).length;
+    let withStock = 0;
+    let without = 0;
+    for (let seed = 1; seed <= 20; seed++) {
+      withStock += uses(run({ ratings: {}, recentWeeks: [], stockUrgency: stock }, seed));
+      without += uses(run(undefined, seed));
+    }
+    expect(withStock).toBeGreaterThan(without * 1.5);
+  });
+});

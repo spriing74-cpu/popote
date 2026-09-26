@@ -59,6 +59,7 @@ export type Action =
   | { type: 'keepRecipe'; recipe: Recipe }
   | { type: 'removeCustomRecipe'; id: string }
   | { type: 'saveEquipment'; equipment: Equipment }
+  | { type: 'rateRecipe'; recipeId: string; value: 1 | -1 | 0 }
   | { type: 'removeEquipment'; id: string }
   | { type: 'replaceState'; state: AppState }
   | { type: 'reset' };
@@ -132,8 +133,12 @@ export function reducer(baseCatalog: Catalog) {
       }
       case 'setPlan':
         return { ...state, plan: action.plan };
-      case 'newWeek':
-        return { ...state, plan: emptyPlan(state.profiles, state.settings.prepDays, action.weekOf), checked: {} };
+      case 'newWeek': {
+        // La semaine qui se termine rejoint l'historique (pour varier les suggestions suivantes).
+        const eaten = [...new Set(SLOT_IDS.map((id) => plan.slots[id].leftoverOf ? null : plan.slots[id].recipeId).filter((r): r is string => !!r))];
+        const history = eaten.length ? [{ weekOf: plan.weekOf, recipeIds: eaten }, ...state.history].slice(0, 8) : state.history;
+        return { ...state, history, plan: emptyPlan(state.profiles, state.settings.prepDays, action.weekOf), checked: {} };
+      }
       case 'setWeekOf':
         return { ...state, plan: { ...plan, weekOf: action.weekOf } };
       case 'applyPrepDays': {
@@ -209,6 +214,12 @@ export function reducer(baseCatalog: Catalog) {
         const inUse = SLOT_IDS.some((id) => plan.slots[id].recipeId === action.id);
         if (inUse) return state;
         return { ...state, customRecipes: state.customRecipes.filter((r) => r.id !== action.id), favorites: state.favorites.filter((f) => f !== action.id) };
+      }
+      case 'rateRecipe': {
+        const ratings = { ...state.ratings };
+        if (action.value === 0) delete ratings[action.recipeId];
+        else ratings[action.recipeId] = action.value;
+        return { ...state, ratings };
       }
       case 'saveEquipment':
         return {

@@ -22,6 +22,7 @@ import {
 } from '../domain/week';
 import { useCatalog, useStore } from '../state/store';
 import { todayIso } from '../domain/inventory';
+import { stockEntries, stockUrgencyMap } from '../domain/antigaspi';
 import { FreshnessBadge } from './common';
 import { SlotEditor } from './SlotEditor';
 
@@ -38,7 +39,12 @@ export function PlanningScreen({ goTo }: { goTo: (t: 'courses') => void }) {
   const suggest = (onlyEmpty: boolean) => {
     if (!onlyEmpty && filled > 0 && !confirm('Reproposer tous les repas ? Vos choix actuels seront remplacés (les convives sont conservés).')) return;
     const seed = Math.floor(Math.random() * 1e9);
-    dispatch({ type: 'setPlan', plan: suggestPlan(catalog, plan, state.profiles, state.settings, state.favorites, { seed, onlyEmpty }) });
+    const learning = {
+      ratings: state.ratings,
+      recentWeeks: state.history.map((h) => h.recipeIds),
+      stockUrgency: stockUrgencyMap(state.inventory, catalog, todayIso()),
+    };
+    dispatch({ type: 'setPlan', plan: suggestPlan(catalog, plan, state.profiles, state.settings, state.favorites, { seed, onlyEmpty, learning }) });
   };
 
   const newWeek = () => {
@@ -67,7 +73,7 @@ export function PlanningScreen({ goTo }: { goTo: (t: 'courses') => void }) {
         </button>
       </div>
       <p className="muted small">
-        {filled}/10 repas choisis. Les suggestions évitent les répétitions et respectent la boîte froide du midi, la conservation et vos exclusions. Tout reste modifiable.
+        {filled}/10 repas choisis. Les suggestions varient d’une semaine à l’autre, privilégient ce que vous aimez et ce qui périme dans le frigo, et respectent la boîte froide du midi, la conservation et vos exclusions. Tout reste modifiable.
       </p>
 
       <div className="segmented" role="tablist">
@@ -115,6 +121,11 @@ function SlotRow({ id, label, onOpen }: { id: SlotId; label: string; onOpen: () 
   const present = presentProfiles(slot);
   const targets = leftoverTargets(plan, id);
   const fresh = checkFreshness(catalog, plan, id);
+  const savesStock = useMemo(() => {
+    if (!recipe || slot.leftoverOf) return [];
+    const urgent = stockEntries(state.inventory, catalog, todayIso()).filter((e) => e.daysLeft !== null && e.daysLeft <= 5);
+    return urgent.filter((e) => recipe.ingredients.some((i) => i.ingredientId === e.ingredientId)).map((e) => catalog.ingredients[e.ingredientId].name.toLowerCase());
+  }, [recipe, slot.leftoverOf, state.inventory, catalog]);
 
   return (
     <button className={`slot ${recipe ? '' : 'slot-empty'}`} onClick={onOpen}>
@@ -127,6 +138,8 @@ function SlotRow({ id, label, onOpen }: { id: SlotId; label: string; onOpen: () 
           {targets.length > 0 && <span className="badge info">+ restes pour {targets.length} repas</span>}
           {slot.extraPortions > 0 && !slot.leftoverOf && <span className="badge info">+{slot.extraPortions} portion(s)</span>}
           <FreshnessBadge check={fresh} />
+          {savesStock.length > 0 && <span className="badge ok-badge">🧊 écoule : {savesStock.slice(0, 2).join(', ')}</span>}
+          {recipe && state.ratings[recipe.id] === 1 && <span className="badge">👍</span>}
           {slot.note && <span className="badge">{slot.note}</span>}
         </span>
       </span>

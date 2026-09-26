@@ -67,8 +67,26 @@ export function RecipeDetail({
       </p>
       <div className="row gap">
         <button className="btn" onClick={() => dispatch({ type: 'toggleFavorite', recipeId: recipe.id })}>
-          {fav ? '★ Favori' : '☆ Ajouter aux favoris'}
+          {fav ? '★ Favori' : '☆ Favori'}
         </button>
+        {catalog.recipes[recipe.id] && (
+          <>
+            <button
+              className={state.ratings[recipe.id] === 1 ? 'btn primary' : 'btn'}
+              aria-pressed={state.ratings[recipe.id] === 1}
+              onClick={() => dispatch({ type: 'rateRecipe', recipeId: recipe.id, value: state.ratings[recipe.id] === 1 ? 0 : 1 })}
+            >
+              👍 On aime
+            </button>
+            <button
+              className={state.ratings[recipe.id] === -1 ? 'btn danger-soft' : 'btn'}
+              aria-pressed={state.ratings[recipe.id] === -1}
+              onClick={() => dispatch({ type: 'rateRecipe', recipeId: recipe.id, value: state.ratings[recipe.id] === -1 ? 0 : -1 })}
+            >
+              👎 Plus jamais
+            </button>
+          </>
+        )}
         {onPick && (
           <button className="btn primary" onClick={onPick}>
             Choisir cette recette

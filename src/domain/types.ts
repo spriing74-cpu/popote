@@ -265,6 +265,10 @@ export interface AppState {
   customRecipes: Recipe[];
   /** Équipements de la cuisine (four, airfryer…). */
   equipment: Equipment[];
+  /** Notes sur les recettes : 1 = on aime, -1 = plus jamais. */
+  ratings: Record<string, 1 | -1>;
+  /** Recettes des semaines passées (la plus récente en premier, 8 semaines max). */
+  history: { weekOf: string | null; recipeIds: string[] }[];
 }
 
 // ---------- Stock (frigo) ----------

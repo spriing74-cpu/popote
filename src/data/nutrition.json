@@ -1,0 +1,1469 @@
+{
+ "source": "Anses. 2020. Table de composition nutritionnelle des aliments Ciqual",
+ "url": "https://ciqual.anses.fr",
+ "licence": "Licence Ouverte / Etalab",
+ "unite": "pour 100 g",
+ "items": {
+  "agneau": {
+   "code": 21504,
+   "aliment": "Agneau, épaule, crue",
+   "kcal": 170.0,
+   "proteines": 18.3,
+   "glucides": 0.45,
+   "lipides": 10.6,
+   "fibres": 0.0,
+   "sel": 0.2
+  },
+  "ail": {
+   "code": 11000,
+   "aliment": "Ail, cru",
+   "kcal": 111.0,
+   "proteines": 5.31,
+   "glucides": 18.6,
+   "lipides": 0.25,
+   "fibres": 5.8,
+   "sel": 0.02
+  },
+  "amandes": {
+   "code": 15000,
+   "aliment": "Amande (avec peau)",
+   "kcal": 599.9,
+   "proteines": 18.8,
+   "glucides": 9.51,
+   "lipides": 51.3,
+   "fibres": 12.5,
+   "sel": 0.01
+  },
+  "aubergine": {
+   "code": 20053,
+   "aliment": "Aubergine, crue",
+   "kcal": 20.7,
+   "proteines": 1.12,
+   "glucides": 2.39,
+   "lipides": 0.14,
+   "fibres": 2.7,
+   "sel": 0.01
+  },
+  "avocat": {
+   "code": 13004,
+   "aliment": "Avocat, pulpe, cru",
+   "kcal": 205.0,
+   "proteines": 1.56,
+   "glucides": 0.83,
+   "lipides": 20.6,
+   "fibres": 3.6,
+   "sel": 0.01
+  },
+  "baguette": {
+   "code": 7001,
+   "aliment": "Pain, baguette, courante",
+   "kcal": 287.0,
+   "proteines": 8.27,
+   "glucides": 58.3,
+   "lipides": 1.4,
+   "fibres": 2.7,
+   "sel": 1.3
+  },
+  "banane": {
+   "code": 13005,
+   "aliment": "Banane, pulpe, crue",
+   "kcal": 90.5,
+   "proteines": 1.06,
+   "glucides": 19.7,
+   "lipides": 0.25,
+   "fibres": 2.7,
+   "sel": 0.01
+  },
+  "barre_cereales": {
+   "code": 31113,
+   "aliment": "Barre céréalière aux fruits",
+   "kcal": 377.0,
+   "proteines": 5.49,
+   "glucides": 73.5,
+   "lipides": 7.07,
+   "fibres": 3.8,
+   "sel": 0.63
+  },
+  "basilic": {
+   "code": 11033,
+   "aliment": "Basilic, frais",
+   "kcal": 34.8,
+   "proteines": 3.35,
+   "glucides": 2.55,
+   "lipides": 0.47,
+   "fibres": 3.47,
+   "sel": 0.03
+  },
+  "betterave": {
+   "code": 20003,
+   "aliment": "Betterave rouge, cuite",
+   "kcal": 42.8,
+   "proteines": 1.44,
+   "glucides": 7.13,
+   "lipides": 0.4,
+   "fibres": 2.5,
+   "sel": 0.23
+  },
+  "beurre": {
+   "code": 16400,
+   "aliment": "Beurre à 82% MG, doux",
+   "kcal": 753.0,
+   "proteines": 0.7,
+   "glucides": 0.9,
+   "lipides": 82.9,
+   "fibres": 0.0,
+   "sel": 0.06
+  },
+  "beurre_cacahuete": {
+   "code": 15202,
+   "aliment": "Beurre de cacahuète ou Pâte d'arachide",
+   "kcal": 635.7,
+   "proteines": 22.2,
+   "glucides": 16.1,
+   "lipides": 52.5,
+   "fibres": 5.0,
+   "sel": 0.97
+  },
+  "boeuf_hache": {
+   "code": 6250,
+   "aliment": "Boeuf, steak haché 5% MG, cru",
+   "kcal": 130.0,
+   "proteines": 21.9,
+   "glucides": 0.3,
+   "lipides": 4.59,
+   "fibres": 0.0,
+   "sel": 0.1
+  },
+  "boeuf_mijoter": {
+   "code": 6231,
+   "aliment": "Boeuf, à bourguignon ou pot-au-feu, cru",
+   "kcal": 164.0,
+   "proteines": 24.0,
+   "glucides": 0.0,
+   "lipides": 7.5,
+   "fibres": 0.0,
+   "sel": 0.1
+  },
+  "boeuf_steak": {
+   "code": 6212,
+   "aliment": "Boeuf, bavette d'aloyau, crue",
+   "kcal": 133.0,
+   "proteines": 20.4,
+   "glucides": 0.0,
+   "lipides": 5.67,
+   "fibres": 0.0,
+   "sel": 0.09
+  },
+  "bouillon": {
+   "code": 11174,
+   "aliment": "Bouillon de volaille, déshydraté",
+   "kcal": 233.0,
+   "proteines": 11.3,
+   "glucides": 20.8,
+   "lipides": 11.5,
+   "fibres": 0.58,
+   "sel": 49.6
+  },
+  "boulgour": {
+   "code": 9690,
+   "aliment": "Boulgour de blé, cru",
+   "kcal": 351.0,
+   "proteines": 11.5,
+   "glucides": 66.8,
+   "lipides": 1.71,
+   "fibres": 9.57,
+   "sel": 0.04
+  },
+  "brocoli": {
+   "code": 20057,
+   "aliment": "Brocoli, cru",
+   "kcal": 32.7,
+   "proteines": 3.95,
+   "glucides": 1.7,
+   "lipides": 0.48,
+   "fibres": 2.9,
+   "sel": 0.05
+  },
+  "carotte": {
+   "code": 20009,
+   "aliment": "Carotte, crue",
+   "kcal": 40.2,
+   "proteines": 0.63,
+   "glucides": 7.59,
+   "lipides": 0.25,
+   "fibres": 2.7,
+   "sel": 0.11
+  },
+  "celeri": {
+   "code": 20023,
+   "aliment": "Céleri branche, cru",
+   "kcal": 17.6,
+   "proteines": 0.63,
+   "glucides": 2.41,
+   "lipides": 0.25,
+   "fibres": 2.2,
+   "sel": 0.2
+  },
+  "champignon": {
+   "code": 20056,
+   "aliment": "Champignon de Paris ou champignon de couche, cru",
+   "kcal": 28.0,
+   "proteines": 2.62,
+   "glucides": 3.15,
+   "lipides": 0.36,
+   "fibres": 1.0,
+   "sel": 0.1
+  },
+  "chapelure": {
+   "code": 7500,
+   "aliment": "Chapelure",
+   "kcal": 374.0,
+   "proteines": 11.6,
+   "glucides": 70.0,
+   "lipides": 3.77,
+   "fibres": 4.5,
+   "sel": 1.82
+  },
+  "chevre_buche": {
+   "code": 12802,
+   "aliment": "Fromage de chèvre lactique affiné, au lait pasteurisé (type bûchette ou crottin)",
+   "kcal": 300.0,
+   "proteines": 19.8,
+   "glucides": 0.0,
+   "lipides": 24.7,
+   "fibres": 0.0,
+   "sel": 1.23
+  },
+  "chorizo": {
+   "code": 30315,
+   "aliment": "Chorizo",
+   "kcal": 433.0,
+   "proteines": 23.5,
+   "glucides": 3.05,
+   "lipides": 36.1,
+   "fibres": 0.93,
+   "sel": 4.24
+  },
+  "chou": {
+   "code": 20116,
+   "aliment": "Chou blanc, cru",
+   "kcal": 36.5,
+   "proteines": 1.38,
+   "glucides": 4.63,
+   "lipides": 0.6,
+   "fibres": 3.5,
+   "sel": 0.03
+  },
+  "chou_fleur": {
+   "code": 20016,
+   "aliment": "Chou-fleur, cru",
+   "kcal": 26.2,
+   "proteines": 1.81,
+   "glucides": 2.13,
+   "lipides": 0.7,
+   "fibres": 2.2,
+   "sel": 0.01
+  },
+  "ciboulette": {
+   "code": 11003,
+   "aliment": "Ciboule ou Ciboulette, fraîche",
+   "kcal": 29.7,
+   "proteines": 2.57,
+   "glucides": 2.1,
+   "lipides": 0.52,
+   "fibres": 3.19,
+   "sel": 0.03
+  },
+  "citron": {
+   "code": 13009,
+   "aliment": "Citron, pulpe, cru",
+   "kcal": 27.6,
+   "proteines": 0.25,
+   "glucides": 1.56,
+   "lipides": 0.25,
+   "fibres": 0.25,
+   "sel": 0.01
+  },
+  "clementine": {
+   "code": 13024,
+   "aliment": "Clémentine ou Mandarine, pulpe, crue",
+   "kcal": 47.3,
+   "proteines": 0.81,
+   "glucides": 9.17,
+   "lipides": 0.25,
+   "fibres": 1.7,
+   "sel": 0.01
+  },
+  "compote": {
+   "code": 13038,
+   "aliment": "Compote de pomme",
+   "kcal": 102.0,
+   "proteines": 0.23,
+   "glucides": 24.4,
+   "lipides": 0.21,
+   "fibres": 1.53,
+   "sel": 0.0
+  },
+  "comte": {
+   "code": 12110,
+   "aliment": "Comté",
+   "kcal": 418.0,
+   "proteines": 27.2,
+   "glucides": 0.0,
+   "lipides": 34.6,
+   "fibres": 0.0,
+   "sel": 0.8
+  },
+  "concentre_tomate": {
+   "code": 20268,
+   "aliment": "Tomate, double concentré, appertisé",
+   "kcal": 92.8,
+   "proteines": 3.73,
+   "glucides": 17.0,
+   "lipides": 0.29,
+   "fibres": 3.62,
+   "sel": 0.93
+  },
+  "concombre": {
+   "code": 20019,
+   "aliment": "Concombre, pulpe et peau, cru",
+   "kcal": 15.6,
+   "proteines": 0.64,
+   "glucides": 2.54,
+   "lipides": 0.11,
+   "fibres": 0.6,
+   "sel": 0.01
+  },
+  "coriandre": {
+   "code": 11094,
+   "aliment": "Coriandre, fraiche",
+   "kcal": 22.3,
+   "proteines": 2.13,
+   "glucides": 0.87,
+   "lipides": 0.52,
+   "fibres": 2.8,
+   "sel": 0.12
+  },
+  "cornichons": {
+   "code": 11004,
+   "aliment": "Cornichon, au vinaigre",
+   "kcal": 19.4,
+   "proteines": 1.06,
+   "glucides": 0.78,
+   "lipides": 0.3,
+   "fibres": 1.5,
+   "sel": 1.72
+  },
+  "courge": {
+   "code": 20138,
+   "aliment": "Courge doubeurre (butternut), pulpe, crue",
+   "kcal": 30.5,
+   "proteines": 1.0,
+   "glucides": 5.4,
+   "lipides": 0.1,
+   "fibres": 2.0,
+   "sel": 0.01
+  },
+  "courgette": {
+   "code": 20020,
+   "aliment": "Courgette, pulpe et peau, crue",
+   "kcal": 16.5,
+   "proteines": 1.23,
+   "glucides": 1.8,
+   "lipides": 0.26,
+   "fibres": 1.05,
+   "sel": 0.02
+  },
+  "creme_epaisse": {
+   "code": 19410,
+   "aliment": "Crème de lait, 30% MG, épaisse, rayon frais",
+   "kcal": 304.0,
+   "proteines": 3.0,
+   "glucides": 2.8,
+   "lipides": 30.7,
+   "fibres": 1.5,
+   "sel": 0.07
+  },
+  "creme_liquide": {
+   "code": 19415,
+   "aliment": "Crème de lait, 30% MG, semi-épaisse, UHT",
+   "kcal": 297.0,
+   "proteines": 2.49,
+   "glucides": 1.94,
+   "lipides": 30.7,
+   "fibres": 1.5,
+   "sel": 0.07
+  },
+  "crevettes": {
+   "code": 10007,
+   "aliment": "Crevette, cuite",
+   "kcal": 93.8,
+   "proteines": 19.0,
+   "glucides": 1.87,
+   "lipides": 1.16,
+   "fibres": 0.0,
+   "sel": 1.35
+  },
+  "cumin": {
+   "code": 11042,
+   "aliment": "Cumin, graine",
+   "kcal": 427.0,
+   "proteines": 17.8,
+   "glucides": 33.7,
+   "lipides": 22.3,
+   "fibres": 10.5,
+   "sel": 0.42
+  },
+  "curry": {
+   "code": 11005,
+   "aliment": "Curry, poudre",
+   "kcal": 301.0,
+   "proteines": 14.5,
+   "glucides": 2.63,
+   "lipides": 14.0,
+   "fibres": 53.2,
+   "sel": 0.13
+  },
+  "dinde_escalope": {
+   "code": 36304,
+   "aliment": "Dinde, escalope, crue",
+   "kcal": 109.0,
+   "proteines": 24.1,
+   "glucides": 0.51,
+   "lipides": 1.22,
+   "fibres": 0.0,
+   "sel": 0.2
+  },
+  "echalote": {
+   "code": 20097,
+   "aliment": "Échalote, crue",
+   "kcal": 63.6,
+   "proteines": 1.81,
+   "glucides": 12.2,
+   "lipides": 0.25,
+   "fibres": 2.6,
+   "sel": 0.01
+  },
+  "emmental_rape": {
+   "code": 12118,
+   "aliment": "Emmental ou emmenthal râpé",
+   "kcal": 367.0,
+   "proteines": 28.1,
+   "glucides": 0.0,
+   "lipides": 28.6,
+   "fibres": 0.0,
+   "sel": 0.75
+  },
+  "endive": {
+   "code": 20026,
+   "aliment": "Endive, crue",
+   "kcal": 20.2,
+   "proteines": 1.19,
+   "glucides": 2.83,
+   "lipides": 0.25,
+   "fibres": 1.1,
+   "sel": 0.01
+  },
+  "epinards": {
+   "code": 20083,
+   "aliment": "Épinard, surgelé, cru",
+   "kcal": 24.9,
+   "proteines": 2.87,
+   "glucides": 0.89,
+   "lipides": 0.49,
+   "fibres": 2.7,
+   "sel": 0.1
+  },
+  "farine": {
+   "code": 9436,
+   "aliment": "Farine de blé tendre ou froment T55 (pour pains)",
+   "kcal": 350.0,
+   "proteines": 9.03,
+   "glucides": 73.7,
+   "lipides": 1.0,
+   "fibres": 3.2,
+   "sel": 0.07
+  },
+  "fenouil": {
+   "code": 20028,
+   "aliment": "Fenouil, cru",
+   "kcal": 21.8,
+   "proteines": 1.0,
+   "glucides": 2.63,
+   "lipides": 0.25,
+   "fibres": 2.6,
+   "sel": 0.06
+  },
+  "feta": {
+   "code": 12066,
+   "aliment": "Feta AOP",
+   "kcal": 285.0,
+   "proteines": 15.1,
+   "glucides": 0.65,
+   "lipides": 24.3,
+   "fibres": 0.0,
+   "sel": 2.27
+  },
+  "frites_four": {
+   "code": 4044,
+   "aliment": "Frites de pommes de terre, surgelées, préfrites, pour cuisson rôtie/ au four",
+   "kcal": 154.0,
+   "proteines": 2.41,
+   "glucides": 23.4,
+   "lipides": 5.09,
+   "fibres": 2.58,
+   "sel": 0.28
+  },
+  "fromage_blanc": {
+   "code": 19646,
+   "aliment": "Fromage blanc nature, 3% MG environ",
+   "kcal": 76.9,
+   "proteines": 8.03,
+   "glucides": 3.46,
+   "lipides": 3.26,
+   "fibres": 0.0,
+   "sel": 0.11
+  },
+  "fromage_frais": {
+   "code": 12315,
+   "aliment": "Spécialité fromagère non affinée environ 25% MG, type fromage en barquette à tartiner ou coque fromagère",
+   "kcal": 255.0,
+   "proteines": 5.36,
+   "glucides": 4.24,
+   "lipides": 23.9,
+   "fibres": 0.0,
+   "sel": 1.1
+  },
+  "fromage_raclette": {
+   "code": 12749,
+   "aliment": "Raclette (fromage)",
+   "kcal": 342.0,
+   "proteines": 23.4,
+   "glucides": 0.0,
+   "lipides": 27.5,
+   "fibres": 0.0,
+   "sel": 1.69
+  },
+  "gingembre": {
+   "code": 11074,
+   "aliment": "Gingembre, racine crue",
+   "kcal": 32.9,
+   "proteines": 1.1,
+   "glucides": 3.4,
+   "lipides": 1.1,
+   "fibres": 2.7,
+   "sel": 0.02
+  },
+  "gnocchi": {
+   "code": 26264,
+   "aliment": "Gnocchi à la pomme de terre, cru",
+   "kcal": 176.0,
+   "proteines": 4.66,
+   "glucides": 35.0,
+   "lipides": 1.42,
+   "fibres": 2.2,
+   "sel": 1.18
+  },
+  "haricots_blancs": {
+   "code": 20511,
+   "aliment": "Haricot blanc, appertisé, égoutté",
+   "kcal": 87.5,
+   "proteines": 6.57,
+   "glucides": 10.9,
+   "lipides": 0.4,
+   "fibres": 7.0,
+   "sel": 0.69
+  },
+  "haricots_rouges": {
+   "code": 20524,
+   "aliment": "Haricot rouge, appertisé, égoutté",
+   "kcal": 108.0,
+   "proteines": 8.31,
+   "glucides": 13.0,
+   "lipides": 0.97,
+   "fibres": 7.0,
+   "sel": 0.68
+  },
+  "haricots_verts": {
+   "code": 20070,
+   "aliment": "Haricot vert, surgelé, cru",
+   "kcal": 34.0,
+   "proteines": 1.97,
+   "glucides": 4.35,
+   "lipides": 0.17,
+   "fibres": 3.68,
+   "sel": 0.01
+  },
+  "haricots_verts_frais": {
+   "code": 20061,
+   "aliment": "Haricot vert, cru",
+   "kcal": 31.6,
+   "proteines": 1.85,
+   "glucides": 4.14,
+   "lipides": 0.21,
+   "fibres": 2.85,
+   "sel": 0.01
+  },
+  "herbes_provence": {
+   "code": 11060,
+   "aliment": "Herbes de Provence, séchées",
+   "kcal": 283.0,
+   "proteines": 11.5,
+   "glucides": 23.0,
+   "lipides": 7.2,
+   "fibres": 40.1,
+   "sel": 0.09
+  },
+  "houmous": {
+   "code": 25621,
+   "aliment": "Houmous, préemballé",
+   "kcal": 288.3,
+   "proteines": 8.2,
+   "glucides": 7.1,
+   "lipides": 23.9,
+   "fibres": 5.98,
+   "sel": 1.19
+  },
+  "huile_neutre": {
+   "code": 17440,
+   "aliment": "Huile de tournesol",
+   "kcal": 901.0,
+   "proteines": 0.25,
+   "glucides": 0.0,
+   "lipides": 100.0,
+   "fibres": 0.0,
+   "sel": 0.03
+  },
+  "huile_olive": {
+   "code": 17270,
+   "aliment": "Huile d'olive vierge extra",
+   "kcal": 900.0,
+   "proteines": 0.25,
+   "glucides": 0.0,
+   "lipides": 99.9,
+   "fibres": 0.0,
+   "sel": 0.01
+  },
+  "jambon_blanc": {
+   "code": 28900,
+   "aliment": "Jambon cuit, supérieur",
+   "kcal": 125.0,
+   "proteines": 20.8,
+   "glucides": 0.81,
+   "lipides": 4.28,
+   "fibres": 0.07,
+   "sel": 1.79
+  },
+  "jambon_cru": {
+   "code": 28800,
+   "aliment": "Jambon cru",
+   "kcal": 225.0,
+   "proteines": 25.9,
+   "glucides": 0.76,
+   "lipides": 13.2,
+   "fibres": 0.0,
+   "sel": 5.67
+  },
+  "jeunes_pousses": {
+   "code": 20099,
+   "aliment": "Mâche, crue",
+   "kcal": 16.8,
+   "proteines": 2.0,
+   "glucides": 0.5,
+   "lipides": 0.25,
+   "fibres": 2.3,
+   "sel": 0.01
+  },
+  "knacks": {
+   "code": 30742,
+   "aliment": "Saucisse de Strasbourg ou Knack",
+   "kcal": 291.0,
+   "proteines": 12.4,
+   "glucides": 1.39,
+   "lipides": 25.9,
+   "fibres": 1.37,
+   "sel": 2.21
+  },
+  "lait": {
+   "code": 19041,
+   "aliment": "Lait demi-écrémé, UHT",
+   "kcal": 47.0,
+   "proteines": 3.38,
+   "glucides": 4.83,
+   "lipides": 1.55,
+   "fibres": 0.0,
+   "sel": 0.09
+  },
+  "lait_coco": {
+   "code": 18041,
+   "aliment": "Lait de coco ou Crème de coco",
+   "kcal": 188.0,
+   "proteines": 1.77,
+   "glucides": 3.4,
+   "lipides": 18.4,
+   "fibres": 0.57,
+   "sel": 0.07
+  },
+  "lardons": {
+   "code": 28720,
+   "aliment": "Lardon fumé, cru",
+   "kcal": 275.0,
+   "proteines": 16.7,
+   "glucides": 0.96,
+   "lipides": 22.6,
+   "fibres": 0.34,
+   "sel": 2.63
+  },
+  "lasagnes": {
+   "code": 9810,
+   "aliment": "Pâtes sèches standard, crues",
+   "kcal": 336.0,
+   "proteines": 11.5,
+   "glucides": 65.8,
+   "lipides": 1.79,
+   "fibres": 3.0,
+   "sel": 0.03
+  },
+  "laurier": {
+   "code": 11053,
+   "aliment": "Laurier, feuille",
+   "kcal": 353.0,
+   "proteines": 7.61,
+   "glucides": 48.6,
+   "lipides": 8.36,
+   "fibres": 26.3,
+   "sel": 0.06
+  },
+  "lentilles_corail": {
+   "code": 20535,
+   "aliment": "Lentille corail, sèche",
+   "kcal": 328.4,
+   "proteines": 27.7,
+   "glucides": 44.9,
+   "lipides": 0.8,
+   "fibres": 15.4,
+   "sel": 0.07
+  },
+  "lentilles_vertes": {
+   "code": 20585,
+   "aliment": "Lentille verte, sèche",
+   "kcal": 327.4,
+   "proteines": 25.1,
+   "glucides": 44.5,
+   "lipides": 1.8,
+   "fibres": 16.4,
+   "sel": 0.07
+  },
+  "levure_chimique": {
+   "code": 11046,
+   "aliment": "Levure chimique ou Poudre à lever",
+   "kcal": 146.2,
+   "proteines": 1.96,
+   "glucides": 33.2,
+   "lipides": 0.2,
+   "fibres": 1.9,
+   "sel": 0.0
+  },
+  "mais": {
+   "code": 20066,
+   "aliment": "Maïs doux, appertisé, égoutté",
+   "kcal": 106.0,
+   "proteines": 2.82,
+   "glucides": 18.4,
+   "lipides": 1.68,
+   "fibres": 3.1,
+   "sel": 0.59
+  },
+  "mayonnaise": {
+   "code": 11054,
+   "aliment": "Mayonnaise (70% MG min.), préemballée",
+   "kcal": 693.4,
+   "proteines": 1.36,
+   "glucides": 2.62,
+   "lipides": 75.2,
+   "fibres": 0.32,
+   "sel": 1.39
+  },
+  "menthe": {
+   "code": 11027,
+   "aliment": "Menthe, fraîche",
+   "kcal": 57.6,
+   "proteines": 3.52,
+   "glucides": 5.3,
+   "lipides": 0.84,
+   "fibres": 7.4,
+   "sel": 0.08
+  },
+  "merguez": {
+   "code": 30150,
+   "aliment": "Merguez, crue",
+   "kcal": 316.0,
+   "proteines": 13.5,
+   "glucides": 2.5,
+   "lipides": 28.0,
+   "fibres": 0.0,
+   "sel": 1.48
+  },
+  "merlan": {
+   "code": 26095,
+   "aliment": "Merlan, cru",
+   "kcal": 79.3,
+   "proteines": 18.8,
+   "glucides": 0.0,
+   "lipides": 0.47,
+   "fibres": 0.0,
+   "sel": 0.16
+  },
+  "miel": {
+   "code": 31008,
+   "aliment": "Miel",
+   "kcal": 329.0,
+   "proteines": 0.56,
+   "glucides": 81.7,
+   "lipides": 0.0,
+   "fibres": 0.0,
+   "sel": 0.01
+  },
+  "moules": {
+   "code": 10014,
+   "aliment": "Moule commune, crue",
+   "kcal": 71.8,
+   "proteines": 11.2,
+   "glucides": 2.69,
+   "lipides": 1.82,
+   "fibres": 0.0,
+   "sel": 0.85
+  },
+  "moutarde": {
+   "code": 11013,
+   "aliment": "Moutarde",
+   "kcal": 152.0,
+   "proteines": 6.92,
+   "glucides": 4.33,
+   "lipides": 11.2,
+   "fibres": 0.5,
+   "sel": 6.3
+  },
+  "mozzarella": {
+   "code": 19590,
+   "aliment": "Mozzarella au lait de vache",
+   "kcal": 227.0,
+   "proteines": 16.5,
+   "glucides": 0.75,
+   "lipides": 17.7,
+   "fibres": 0.0,
+   "sel": 0.6
+  },
+  "navet": {
+   "code": 20064,
+   "aliment": "Navet, pelé, cru",
+   "kcal": 26.5,
+   "proteines": 0.76,
+   "glucides": 4.7,
+   "lipides": 0.1,
+   "fibres": 1.9,
+   "sel": 0.11
+  },
+  "nouilles": {
+   "code": 9863,
+   "aliment": "Pâtes ou nouilles asiatiques au blé et aux oeufs, crues, nature",
+   "kcal": 371.0,
+   "proteines": 11.9,
+   "glucides": 71.0,
+   "lipides": 3.0,
+   "fibres": 4.0,
+   "sel": 0.99
+  },
+  "oeuf": {
+   "code": 22000,
+   "aliment": "Oeuf, cru",
+   "kcal": 140.0,
+   "proteines": 12.7,
+   "glucides": 0.27,
+   "lipides": 9.83,
+   "fibres": 0.0,
+   "sel": 0.31
+  },
+  "oignon": {
+   "code": 20034,
+   "aliment": "Oignon, cru",
+   "kcal": 38.4,
+   "proteines": 1.1,
+   "glucides": 6.25,
+   "lipides": 0.62,
+   "fibres": 1.7,
+   "sel": 0.1
+  },
+  "oignon_rouge": {
+   "code": 20238,
+   "aliment": "Oignon rouge, cru",
+   "kcal": 36.3,
+   "proteines": 1.31,
+   "glucides": 5.63,
+   "lipides": 0.4,
+   "fibres": 2.5,
+   "sel": 0.01
+  },
+  "olives": {
+   "code": 13032,
+   "aliment": "Olive noire, en saumure, égouttée",
+   "kcal": 172.9,
+   "proteines": 1.38,
+   "glucides": 0.05,
+   "lipides": 17.2,
+   "fibres": 6.2,
+   "sel": 1.77
+  },
+  "pain_burger": {
+   "code": 7259,
+   "aliment": "Pain pour hamburger ou hot dog (bun), préemballé",
+   "kcal": 293.0,
+   "proteines": 9.07,
+   "glucides": 49.7,
+   "lipides": 5.35,
+   "fibres": 3.3,
+   "sel": 1.14
+  },
+  "pain_campagne": {
+   "code": 7100,
+   "aliment": "Pain, baguette ou boule, de campagne",
+   "kcal": 253.0,
+   "proteines": 7.52,
+   "glucides": 50.0,
+   "lipides": 1.3,
+   "fibres": 4.3,
+   "sel": 1.35
+  },
+  "pain_mie": {
+   "code": 7200,
+   "aliment": "Pain de mie, courant",
+   "kcal": 278.0,
+   "proteines": 7.13,
+   "glucides": 52.3,
+   "lipides": 3.6,
+   "fibres": 1.8,
+   "sel": 1.15
+  },
+  "pain_pita": {
+   "code": 7180,
+   "aliment": "Pain pita",
+   "kcal": 259.0,
+   "proteines": 7.53,
+   "glucides": 53.0,
+   "lipides": 0.92,
+   "fibres": 2.68,
+   "sel": 1.38
+  },
+  "paprika": {
+   "code": 11049,
+   "aliment": "Paprika",
+   "kcal": 319.0,
+   "proteines": 14.1,
+   "glucides": 19.1,
+   "lipides": 12.9,
+   "fibres": 34.9,
+   "sel": 0.17
+  },
+  "parmesan": {
+   "code": 12120,
+   "aliment": "Parmesan",
+   "kcal": 406.0,
+   "proteines": 31.1,
+   "glucides": 0.0,
+   "lipides": 31.0,
+   "fibres": 0.0,
+   "sel": 1.57
+  },
+  "passata": {
+   "code": 20260,
+   "aliment": "Tomate, coulis, appertisé (purée de tomates mi-réduite à 11%)",
+   "kcal": 49.3,
+   "proteines": 2.05,
+   "glucides": 8.53,
+   "lipides": 0.2,
+   "fibres": 2.6,
+   "sel": 0.88
+  },
+  "patate_douce": {
+   "code": 4101,
+   "aliment": "Patate douce, crue",
+   "kcal": 86.3,
+   "proteines": 1.51,
+   "glucides": 18.3,
+   "lipides": 0.15,
+   "fibres": 2.87,
+   "sel": 0.1
+  },
+  "pate_brisee": {
+   "code": 23410,
+   "aliment": "Pâte brisée, crue",
+   "kcal": 377.0,
+   "proteines": 5.35,
+   "glucides": 43.6,
+   "lipides": 19.5,
+   "fibres": 1.8,
+   "sel": 1.06
+  },
+  "pate_feuilletee": {
+   "code": 23424,
+   "aliment": "Pâte feuilletée pur beurre, crue",
+   "kcal": 368.0,
+   "proteines": 5.6,
+   "glucides": 39.7,
+   "lipides": 20.1,
+   "fibres": 2.32,
+   "sel": 1.37
+  },
+  "pate_pizza": {
+   "code": 37001,
+   "aliment": "Pâte à pizza crue",
+   "kcal": 240.0,
+   "proteines": 7.05,
+   "glucides": 44.2,
+   "lipides": 3.45,
+   "fibres": 2.2,
+   "sel": 1.31
+  },
+  "pates_courtes": {
+   "code": 9810,
+   "aliment": "Pâtes sèches standard, crues",
+   "kcal": 336.0,
+   "proteines": 11.5,
+   "glucides": 65.8,
+   "lipides": 1.79,
+   "fibres": 3.0,
+   "sel": 0.03
+  },
+  "persil": {
+   "code": 11014,
+   "aliment": "Persil, frais",
+   "kcal": 43.0,
+   "proteines": 3.71,
+   "glucides": 3.48,
+   "lipides": 0.63,
+   "fibres": 4.3,
+   "sel": 0.59
+  },
+  "pesto": {
+   "code": 11179,
+   "aliment": "Sauce pesto, préemballée",
+   "kcal": 370.0,
+   "proteines": 3.94,
+   "glucides": 6.6,
+   "lipides": 35.4,
+   "fibres": 2.5,
+   "sel": 2.64
+  },
+  "petits_pois": {
+   "code": 20084,
+   "aliment": "Petits pois, surgelés, crus",
+   "kcal": 75.4,
+   "proteines": 5.86,
+   "glucides": 8.77,
+   "lipides": 0.44,
+   "fibres": 6.45,
+   "sel": 0.09
+  },
+  "piment": {
+   "code": 20151,
+   "aliment": "Piment, cru",
+   "kcal": 44.5,
+   "proteines": 1.87,
+   "glucides": 7.7,
+   "lipides": 0.32,
+   "fibres": 1.65,
+   "sel": 0.02
+  },
+  "poelee_legumes": {
+   "code": 20262,
+   "aliment": "Poêlée de légumes assaisonnés sans champignon, surgelée, crue",
+   "kcal": 81.2,
+   "proteines": 2.6,
+   "glucides": 12.1,
+   "lipides": 1.77,
+   "fibres": 3.6,
+   "sel": 1.25
+  },
+  "poireau": {
+   "code": 20039,
+   "aliment": "Poireau, cru",
+   "kcal": 32.3,
+   "proteines": 1.49,
+   "glucides": 4.9,
+   "lipides": 0.25,
+   "fibres": 2.27,
+   "sel": 0.04
+  },
+  "pois_chiches": {
+   "code": 20532,
+   "aliment": "Pois chiche, appertisé, égoutté",
+   "kcal": 122.0,
+   "proteines": 6.74,
+   "glucides": 15.0,
+   "lipides": 2.68,
+   "fibres": 5.45,
+   "sel": 0.54
+  },
+  "poisson_blanc": {
+   "code": 26043,
+   "aliment": "Cabillaud, cru",
+   "kcal": 77.6,
+   "proteines": 18.1,
+   "glucides": 0.0,
+   "lipides": 0.57,
+   "fibres": 0.1,
+   "sel": 0.23
+  },
+  "poivre": {
+   "code": 11015,
+   "aliment": "Poivre noir, poudre",
+   "kcal": 330.0,
+   "proteines": 13.3,
+   "glucides": 39.5,
+   "lipides": 7.5,
+   "fibres": 25.7,
+   "sel": 0.04
+  },
+  "poivron": {
+   "code": 20041,
+   "aliment": "Poivron, vert, jaune ou rouge, cru",
+   "kcal": 26.8,
+   "proteines": 0.8,
+   "glucides": 4.55,
+   "lipides": 0.27,
+   "fibres": 1.5,
+   "sel": 0.02
+  },
+  "polenta": {
+   "code": 9614,
+   "aliment": "Polenta ou semoule de maïs, précuite, sèche",
+   "kcal": 350.0,
+   "proteines": 7.88,
+   "glucides": 74.0,
+   "lipides": 1.8,
+   "fibres": 3.2,
+   "sel": 0.0
+  },
+  "pomme": {
+   "code": 13039,
+   "aliment": "Pomme, pulpe et peau, crue",
+   "kcal": 52.4,
+   "proteines": 0.25,
+   "glucides": 11.6,
+   "lipides": 0.25,
+   "fibres": 1.4,
+   "sel": 0.0
+  },
+  "pomme_de_terre": {
+   "code": 4008,
+   "aliment": "Pomme de terre, sans peau, crue",
+   "kcal": 80.5,
+   "proteines": 2.16,
+   "glucides": 16.2,
+   "lipides": 0.18,
+   "fibres": 1.8,
+   "sel": 0.02
+  },
+  "porc_echine": {
+   "code": 28302,
+   "aliment": "Porc, échine, crue",
+   "kcal": 198.0,
+   "proteines": 18.0,
+   "glucides": 0.1,
+   "lipides": 14.0,
+   "fibres": 0.0,
+   "sel": 0.19
+  },
+  "porc_filet": {
+   "code": 28204,
+   "aliment": "Porc, filet mignon, cru",
+   "kcal": 123.0,
+   "proteines": 21.2,
+   "glucides": 0.4,
+   "lipides": 4.09,
+   "fibres": 0.0,
+   "sel": 0.11
+  },
+  "poulet_cuisse": {
+   "code": 36002,
+   "aliment": "Poulet, cuisse, viande et peau, cru",
+   "kcal": 192.0,
+   "proteines": 17.3,
+   "glucides": 0.0,
+   "lipides": 13.5,
+   "fibres": 0.0,
+   "sel": 0.22
+  },
+  "poulet_filet": {
+   "code": 36017,
+   "aliment": "Poulet, filet, sans peau, cru",
+   "kcal": 110.0,
+   "proteines": 23.4,
+   "glucides": 0.0,
+   "lipides": 1.5,
+   "fibres": 0.0,
+   "sel": 0.11
+  },
+  "poulet_pilon": {
+   "code": 36022,
+   "aliment": "Poulet, pilon, cru",
+   "kcal": 155.0,
+   "proteines": 18.4,
+   "glucides": 0.0,
+   "lipides": 9.05,
+   "fibres": 0.0,
+   "sel": 0.23
+  },
+  "quinoa": {
+   "code": 9340,
+   "aliment": "Quinoa, cru",
+   "kcal": 358.0,
+   "proteines": 13.2,
+   "glucides": 58.1,
+   "lipides": 6.07,
+   "fibres": 7.0,
+   "sel": 0.01
+  },
+  "radis": {
+   "code": 20045,
+   "aliment": "Radis rouge, cru",
+   "kcal": 14.5,
+   "proteines": 0.94,
+   "glucides": 1.53,
+   "lipides": 0.25,
+   "fibres": 1.4,
+   "sel": 0.04
+  },
+  "ras_el_hanout": {
+   "code": 11005,
+   "aliment": "Curry, poudre",
+   "kcal": 301.0,
+   "proteines": 14.5,
+   "glucides": 2.63,
+   "lipides": 14.0,
+   "fibres": 53.2,
+   "sel": 0.13,
+   "note": "mélange d’épices absent de CIQUAL : valeurs du curry en poudre"
+  },
+  "reblochon": {
+   "code": 12045,
+   "aliment": "Reblochon",
+   "kcal": 326.0,
+   "proteines": 20.4,
+   "glucides": 0.0,
+   "lipides": 27.4,
+   "fibres": 0.0,
+   "sel": 1.27
+  },
+  "ricotta": {
+   "code": 19585,
+   "aliment": "Ricotta",
+   "kcal": 158.3,
+   "proteines": 8.79,
+   "glucides": 4.0,
+   "lipides": 11.9,
+   "fibres": 0.0,
+   "sel": 0.3
+  },
+  "riz": {
+   "code": 9100,
+   "aliment": "Riz blanc, cru",
+   "kcal": 352.0,
+   "proteines": 7.04,
+   "glucides": 78.0,
+   "lipides": 0.91,
+   "fibres": 1.05,
+   "sel": 0.01
+  },
+  "salade_verte": {
+   "code": 20031,
+   "aliment": "Laitue, crue",
+   "kcal": 14.7,
+   "proteines": 1.3,
+   "glucides": 1.33,
+   "lipides": 0.2,
+   "fibres": 1.2,
+   "sel": 0.02
+  },
+  "sardines": {
+   "code": 26034,
+   "aliment": "Sardine, à l'huile, appertisée, égouttée",
+   "kcal": 207.0,
+   "proteines": 24.4,
+   "glucides": 0.49,
+   "lipides": 12.0,
+   "fibres": 0.0,
+   "sel": 0.75
+  },
+  "sauce_soja": {
+   "code": 11104,
+   "aliment": "Sauce soja, préemballée",
+   "kcal": 45.5,
+   "proteines": 7.08,
+   "glucides": 3.64,
+   "lipides": 0.1,
+   "fibres": 0.86,
+   "sel": 18.6
+  },
+  "saucisse_toulouse": {
+   "code": 30110,
+   "aliment": "Saucisse de Toulouse, crue",
+   "kcal": 327.0,
+   "proteines": 13.2,
+   "glucides": 1.0,
+   "lipides": 30.0,
+   "fibres": 0.0,
+   "sel": 1.89
+  },
+  "saumon_fume": {
+   "code": 26037,
+   "aliment": "Saumon fumé",
+   "kcal": 178.0,
+   "proteines": 22.0,
+   "glucides": 0.91,
+   "lipides": 9.49,
+   "fibres": 0.12,
+   "sel": 3.51
+  },
+  "saumon_pave": {
+   "code": 26036,
+   "aliment": "Saumon, cru, élevage",
+   "kcal": 194.0,
+   "proteines": 20.5,
+   "glucides": 0.0,
+   "lipides": 12.4,
+   "fibres": 0.12,
+   "sel": 0.16
+  },
+  "sel": {
+   "code": 11017,
+   "aliment": "Sel blanc alimentaire, non iodé, non fluoré (marin, ignigène ou gemme)",
+   "kcal": 0.0,
+   "proteines": 0.0,
+   "glucides": 0.0,
+   "lipides": 0.0,
+   "fibres": 0.0,
+   "sel": 97.8
+  },
+  "semoule": {
+   "code": 9610,
+   "aliment": "Semoule de blé dur, crue",
+   "kcal": 352.0,
+   "proteines": 10.9,
+   "glucides": 71.6,
+   "lipides": 1.25,
+   "fibres": 3.37,
+   "sel": 0.0
+  },
+  "spaghetti": {
+   "code": 9810,
+   "aliment": "Pâtes sèches standard, crues",
+   "kcal": 336.0,
+   "proteines": 11.5,
+   "glucides": 65.8,
+   "lipides": 1.79,
+   "fibres": 3.0,
+   "sel": 0.03
+  },
+  "sucre": {
+   "code": 31016,
+   "aliment": "Sucre blanc",
+   "kcal": 399.2,
+   "proteines": 0.0,
+   "glucides": 99.8,
+   "lipides": 0.0,
+   "fibres": 0.0,
+   "sel": 0.01
+  },
+  "thon": {
+   "code": 26039,
+   "aliment": "Thon, au naturel, appertisé, égoutté",
+   "kcal": 111.0,
+   "proteines": 26.8,
+   "glucides": 0.0,
+   "lipides": 0.4,
+   "fibres": 0.0,
+   "sel": 0.74
+  },
+  "tomate": {
+   "code": 20047,
+   "aliment": "Tomate, crue",
+   "kcal": 19.3,
+   "proteines": 0.86,
+   "glucides": 2.49,
+   "lipides": 0.26,
+   "fibres": 1.2,
+   "sel": 0.01
+  },
+  "tomate_cerise": {
+   "code": 20172,
+   "aliment": "Tomate cerise, crue",
+   "kcal": 33.7,
+   "proteines": 1.31,
+   "glucides": 5.62,
+   "lipides": 0.25,
+   "fibres": 1.2,
+   "sel": 0.01
+  },
+  "tomates_concassees": {
+   "code": 20169,
+   "aliment": "Tomate, pulpe, appertisée",
+   "kcal": 26.1,
+   "proteines": 1.2,
+   "glucides": 3.63,
+   "lipides": 0.25,
+   "fibres": 1.8,
+   "sel": 0.07
+  },
+  "tortilla": {
+   "code": 7815,
+   "aliment": "Tortilla souple (à garnir), à base de blé",
+   "kcal": 327.0,
+   "proteines": 8.34,
+   "glucides": 52.1,
+   "lipides": 8.2,
+   "fibres": 3.85,
+   "sel": 1.25
+  },
+  "vin_blanc": {
+   "code": 5215,
+   "aliment": "Vin blanc (sec)",
+   "kcal": 17.2,
+   "proteines": 0.25,
+   "glucides": 4.04,
+   "lipides": 0.0,
+   "fibres": 0.0,
+   "sel": 0.01
+  },
+  "vin_rouge": {
+   "code": 5214,
+   "aliment": "Vin rouge",
+   "kcal": 82.1,
+   "proteines": 0.07,
+   "glucides": 2.63,
+   "lipides": 0.0,
+   "fibres": 0.0,
+   "sel": 0.0
+  },
+  "vinaigre": {
+   "code": 11018,
+   "aliment": "Vinaigre",
+   "kcal": 22.6,
+   "proteines": 0.04,
+   "glucides": 0.62,
+   "lipides": 0.1,
+   "fibres": 0.0,
+   "sel": 0.03
+  },
+  "yaourt_nature": {
+   "code": 19593,
+   "aliment": "Yaourt, lait fermenté ou spécialité laitière, nature",
+   "kcal": 45.5,
+   "proteines": 3.96,
+   "glucides": 2.65,
+   "lipides": 1.5,
+   "fibres": 1.5,
+   "sel": 0.11
+  }
+ }
+}

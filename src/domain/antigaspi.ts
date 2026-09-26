@@ -24,6 +24,11 @@ export function stockEntries(inventory: InventoryItem[], catalog: Catalog, today
   return [...map.values()].filter((e) => e.qty > 0);
 }
 
+/** Intérêt anti-gaspi de chaque ingrédient en stock, pour orienter les suggestions de planning. */
+export function stockUrgencyMap(inventory: InventoryItem[], catalog: Catalog, today: string): Record<string, number> {
+  return Object.fromEntries(stockEntries(inventory, catalog, today).map((e) => [e.ingredientId, urgencyWeight(e.daysLeft)]));
+}
+
 /** Poids anti-gaspi : plus la date est proche, plus utiliser l'aliment rapporte. */
 export function urgencyWeight(d: number | null): number {
   if (d === null) return 0.3;

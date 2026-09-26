@@ -104,3 +104,22 @@ describe('budget', () => {
     expect(cmp.map((c) => c.store)).toEqual(['lidl']); // aucun prix Auchan / Leclerc : pas de comparaison inventée
   });
 });
+
+describe('notes et historique', () => {
+  it('« Nouvelle semaine » archive les recettes cuisinées et les notes survivent à l’export', () => {
+    const reduce = reducer(CATALOG);
+    let s = defaultState();
+    s = reduce(s, { type: 'setRecipe', slot: 'sam-diner', recipeId: 'chili_con_carne' });
+    s = reduce(s, { type: 'reserveLeftovers', source: 'sam-diner', targets: ['lun-dejeuner'] });
+    s = reduce(s, { type: 'setRecipe', slot: 'dim-diner', recipeId: 'pot_au_feu' });
+    s = reduce(s, { type: 'rateRecipe', recipeId: 'chili_con_carne', value: 1 });
+    s = reduce(s, { type: 'rateRecipe', recipeId: 'moussaka', value: -1 });
+    s = reduce(s, { type: 'newWeek', weekOf: '2026-10-03' });
+    expect(s.history[0].recipeIds.sort()).toEqual(['chili_con_carne', 'pot_au_feu']);
+    const back = parseImport(exportJson(s), CATALOG);
+    expect(back.ratings).toEqual({ chili_con_carne: 1, moussaka: -1 });
+    expect(back.history).toEqual(s.history);
+    s = reduce(s, { type: 'rateRecipe', recipeId: 'moussaka', value: 0 });
+    expect(s.ratings.moussaka).toBeUndefined();
+  });
+});

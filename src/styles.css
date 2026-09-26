@@ -857,3 +857,12 @@ a.btn.primary {
 .pre-line {
   white-space: pre-line;
 }
+
+.badge.ok-badge {
+  background: color-mix(in srgb, var(--ok) 15%, transparent);
+  color: var(--ok);
+}
+.btn.danger-soft {
+  color: var(--danger);
+  border-color: var(--danger);
+}

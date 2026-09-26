@@ -293,6 +293,15 @@ export function normalizeState(raw: unknown, baseCatalog: Catalog): AppState {
       ? Object.fromEntries(Object.entries(raw.aliases).filter((e): e is [string, string] => typeof e[1] === 'string' && !!catalog.ingredients[e[1]]))
       : {},
     customRecipes,
+    ratings: isObj(raw.ratings)
+      ? Object.fromEntries(Object.entries(raw.ratings).filter((e): e is [string, 1 | -1] => (e[1] === 1 || e[1] === -1) && !!catalog.recipes[e[0]]))
+      : {},
+    history: Array.isArray(raw.history)
+      ? raw.history
+          .filter(isObj)
+          .map((h) => ({ weekOf: isIsoDate(h.weekOf) ? h.weekOf : null, recipeIds: arr(h.recipeIds, isStr).filter((r) => catalog.recipes[r]) }))
+          .slice(0, 8)
+      : [],
     equipment: Array.isArray(raw.equipment) ? raw.equipment.filter(isObj).map(normalizeEquipment).filter((e): e is Equipment => e !== null) : [],
   };
 }

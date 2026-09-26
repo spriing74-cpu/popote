@@ -46,8 +46,38 @@ export function recipeFitsSlot(recipe: Recipe, id: SlotId, slot: Slot, profiles:
   return true;
 }
 
+/** Ce que l'app a appris : notes, semaines passées, stock du frigo. */
+export interface Learning {
+  /** 1 = on aime, -1 = plus jamais. */
+  ratings: Record<string, 1 | -1>;
+  /** Recettes des semaines précédentes, la plus récente en premier. */
+  recentWeeks: string[][];
+  /** Intérêt anti-gaspi par ingrédient en stock (plus c'est urgent, plus c'est élevé). */
+  stockUrgency: Record<string, number>;
+}
+
+const RECENT_PENALTY = [8, 4, 2, 2];
+
+/** Ajustement du score (plus petit = mieux) selon les goûts, l'historique et le frigo. */
+export function learningScore(r: Recipe, learning: Learning | undefined, catalog: Catalog): number {
+  if (!learning) return 0;
+  let s = 0;
+  const rating = learning.ratings[r.id];
+  if (rating === -1) s += 1000; // « plus jamais » : seulement s'il n'existe aucune autre possibilité
+  if (rating === 1) s -= 2;
+  learning.recentWeeks.slice(0, RECENT_PENALTY.length).forEach((week, i) => {
+    if (week.includes(r.id)) s += RECENT_PENALTY[i];
+  });
+  const ids = new Set(r.ingredients.map((i) => i.ingredientId).filter((id) => !catalog.ingredients[id]?.staple));
+  let stock = 0;
+  for (const id of ids) stock += learning.stockUrgency[id] ?? 0;
+  s -= Math.min(6, stock);
+  return s;
+}
+
 export interface SuggestOptions {
   seed: number;
+  learning?: Learning;
   /** true : ne remplit que les créneaux vides ; false : repart de zéro (convives conservés). */
   onlyEmpty: boolean;
 }
@@ -166,6 +196,7 @@ export function suggestPlan(
       score += (mainUse.get(r.mainIngredient) ?? 0) * 4;
       if (previousMain && r.mainIngredient === previousMain) score += 6;
       if (favorites.includes(r.id)) score -= 1.5;
+      score += learningScore(r, opts.learning, catalog);
       // Conservation vis-à-vis du jour de préparation (plat + accompagnement par défaut).
       const stored = dayIndex(day) - dayIndex(slot.prepDay);
       const side = r.defaultSide ? catalog.sides[r.defaultSide] : null;
