@@ -3,7 +3,7 @@ import type { InventoryItem, PriceEntry, StorageLocation, StoreId, Unit } from '
 import { STORE_LABELS, formatEuro } from '../domain/budget';
 import { INGREDIENTS } from '../data/ingredients';
 import { parseReceipt } from '../domain/receipt';
-import { bestMatch } from '../domain/matching';
+import { matchReceiptLabel } from '../domain/matching';
 import { aliasKey } from '../domain/openfoodfacts';
 import { defaultLocation, defaultQuantity, estimateExpiry, todayIso } from '../domain/inventory';
 import { loadImage, enhanceForOcr } from '../scan/image';
@@ -82,7 +82,7 @@ export function ReceiptScanner({ onClose }: { onClose: () => void }) {
         return;
       }
       const newRows: Row[] = lines.map((l) => {
-        const id = bestMatch(l.label, catalog, state.aliases);
+        const id = matchReceiptLabel(l.label, catalog, state.aliases);
         const q = defaultQuantity(catalog, id, l.count, l.qty, l.unit);
         const loc = defaultLocation(id);
         return {

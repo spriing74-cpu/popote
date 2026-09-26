@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { InventoryItem } from '../types';
 import { CATALOG } from '../../data/catalog';
 import { defaultSettings, defaultState } from '../../data/defaults';
-import { bestMatch, matchIngredient } from '../matching';
+import { bestMatch, matchIngredient, matchReceiptLabel } from '../matching';
 import { parseExpiryDates, parseReceipt } from '../receipt';
 import { guessIngredient, lookupBarcode, parseOffQuantity, toProductInfo } from '../openfoodfacts';
 import { available, consume, defaultQuantity, estimateExpiry, inventoryAsPantry, urgency } from '../inventory';
@@ -298,5 +298,44 @@ describe('ticket PDF', () => {
       { str: 'Total', x: 40, y: 600, width: 30, height: 10 },
     ]);
     expect(lines).toEqual(['Filets de poulet 10,98 €', 'Courgettes 2,49 €', 'Total']);
+  });
+
+  it('lit un ticket dématérialisé E.Leclerc (code TVA en fin de ligne, lots, abréviations)', () => {
+    const text = [
+      'E . L E C L E R C',
+      'Caisse 014-0115 26 septembre 2026 17:42',
+      'TTC TVA',
+      '>> EPICERIE',
+      "D'AUCY HARCTS BEU XTR FIN 440G",
+      '2 X 1.97€ 3.94 1',
+      'CIRIO COULIS 3X200G 1.33 1',
+      'MUTTI PULPE TMT MORCX BIO400G 1.26 1',
+      'MONSTER ENERGY ORIGINAL BTE50CL 1.40 1',
+      'FLT PLT EXT TENDRE S/OGM X2 4.71 1',
+      'TEO BRISEE 230G 1.25 1',
+      'SANDWI MAXI JAMBON BEURRE 190G 1.51 8',
+      'PLAQ.DX AOC 250G 2.97 1',
+      'YAOURT GRECQUE 4X150G DELISSE 1.29 1',
+      'Total 10 articles 18.13',
+      'Bon immediat 1.05',
+      'CUMUL DISPONIBLE AU 27/09/26 : 1.76 €',
+      'Lot LOT BRII2M68PCT MONSTER 1.05',
+    ].join('\n');
+    const lines = parseReceipt(text);
+    expect(lines).toHaveLength(9);
+    expect(lines[0]).toMatchObject({ count: 2, qty: 440, unit: 'g', price: 3.94 });
+    expect(lines[1]).toMatchObject({ qty: 600, unit: 'g', price: 1.33 });
+    expect(lines[8]).toMatchObject({ qty: 600, unit: 'g', price: 1.29 });
+    expect(lines.map((l) => matchReceiptLabel(l.label, CATALOG))).toEqual([
+      'haricots_verts',
+      'passata',
+      'tomates_concassees',
+      null,
+      'poulet_filet',
+      'pate_brisee',
+      null,
+      'beurre',
+      'yaourt_nature',
+    ]);
   });
 });

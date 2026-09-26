@@ -88,6 +88,57 @@ export function matchIngredient(text: string, catalog: Catalog, aliases: Record<
   return results.sort((a, b) => b.score - a.score).slice(0, limit);
 }
 
+// ---------- Libellés de ticket de caisse ----------
+
+/** Abréviations de caisse (E.Leclerc, Auchan, Lidl…) qui ne sont pas un simple début de mot. */
+const RECEIPT_ABBREV: Record<string, string> = {
+  harcts: 'haricots', hcts: 'haricots', harict: 'haricots', hrcts: 'haricots',
+  tmt: 'tomate', tmts: 'tomates', tom: 'tomate',
+  flt: 'filet', flts: 'filets', fil: 'filet',
+  plt: 'poulet', pltt: 'poulet', vol: 'volaille',
+  plaq: 'plaquette', dx: 'doux', ss: 'sans', beu: 'beurre', xtr: 'extra',
+  pdt: 'pommes de terre', pdterre: 'pommes de terre',
+  cgt: 'courgette', crgt: 'courgette', crt: 'carotte', crtt: 'carottes',
+  yrt: 'yaourt', yrts: 'yaourts', yt: 'yaourt',
+  bf: 'boeuf', vde: 'viande', hach: 'hache',
+  morcx: 'morceaux', mrcx: 'morceaux',
+  mozzarel: 'mozzarella', emment: 'emmental', rap: 'rape',
+  cr: 'creme', crm: 'creme', fr: 'fraiche', epais: 'epaisse',
+  ecr: 'ecreme', lgs: 'legumes', leg: 'legumes', sauc: 'saucisse',
+};
+
+/** Expressions de ticket à trancher avant la recherche générale (null = pas un ingrédient). */
+const RECEIPT_PHRASES: [RegExp, string | null][] = [
+  [/\bsandwi/, null],
+  [/\b(energy|monster|red bull|cola|limonade)\b/, null],
+  [/\byaourts? (vanille|fraise|framboise|fruits?|aromatise|citron|coco)\b/, null],
+  [/\bharicots? (beurre|verts?|plats?|extra fins?|fins?)\b/, 'haricots_verts'],
+  [/\bcoulis\b|\bpassata\b/, 'passata'],
+  [/\bpulpe\b.*\btomates?\b|\btomates? (concassees?|pelees?|en des|morceaux)\b/, 'tomates_concassees'],
+  [/\bconcentre\b.*\btomates?\b/, 'concentre_tomate'],
+  [/\bbrisee\b/, 'pate_brisee'],
+  [/\bfeuilletee\b/, 'pate_feuilletee'],
+  [/\bplaquette\b|\bbeurre (doux|demi sel|aoc|tendre)\b/, 'beurre'],
+];
+
+export function expandReceiptLabel(label: string): string {
+  return normalizeText(label)
+    .split(' ')
+    .map((t) => RECEIPT_ABBREV[t] ?? t)
+    .join(' ');
+}
+
+/** Ingrédient d'une ligne de ticket : libellé appris, puis abréviations de caisse, puis recherche générale. */
+export function matchReceiptLabel(label: string, catalog: Catalog, aliases: Record<string, string> = {}): string | null {
+  const learned = aliases[normalizeText(label)];
+  if (learned && catalog.ingredients[learned]) return learned;
+  const text = expandReceiptLabel(label);
+  for (const [re, id] of RECEIPT_PHRASES) {
+    if (re.test(text)) return id && catalog.ingredients[id] ? id : null;
+  }
+  return bestMatch(text, catalog, aliases);
+}
+
 /** Meilleure correspondance jugée fiable (toute l'expression retrouvée), sinon null. */
 export function bestMatch(text: string, catalog: Catalog, aliases: Record<string, string> = {}, opts: MatchOptions = {}): string | null {
   const [first] = matchIngredient(text, catalog, aliases, 1, opts);

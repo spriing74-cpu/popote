@@ -16,10 +16,18 @@ export interface ReceiptLine {
 const NOISE =
   /(sous[ -]?total|total|tva|t\.v\.a|\bht\b|\bttc\b|carte|\bcb\b|visa|mastercard|contact|esp[eè]ces|rendu|monnaie|merci|bienvenue|ticket|caisse|caissier|h[oô]tesse|siret|siren|\btel\b|t[ée]l[ée]phone|www|http|avantage|remise|r[ée]duction|fid[ée]lit[ée]|cagnotte|points|nombre d.articles|articles?\s*:|montant|net a payer|[àa] payer|bon d.achat|horaires|ouvert|magasin|\bsa\b|capital|rcs|transaction|autoris|\bdate\b|\bheure\b|client|re[çc]u|a conserver|[ée]change|rembours|leclerc|auchan|lidl|carrefour|intermarch|super ?u\b|hyper ?u\b|casino|monoprix|franprix|netto|aldi|\bcora\b|match\b|grand frais)/i;
 
-const PRICE_END = /(-?\d{1,4}[,.]\d{2})\s*(?:€|eur|e)?\s*[a-z*]?\s*$/i;
+// Prix en fin de ligne, éventuellement suivi d'un code TVA (lettre ou chiffre : « 1.36 1 » chez E.Leclerc).
+const PRICE_END = /(-?\d{1,4}[,.]\d{2})\s*(?:€|eur|e)?\s*(?:[a-z*]|\d{1,2})?\s*$/i;
+/** Fin de la liste d'articles : ce qui suit (paiement, avantages, jeux) n'est jamais un article. */
+const END_OF_ITEMS = /^(sous[ -]?)?total\b|^net [àa] payer|^reste [àa] payer|^montant d[ûu]|^[àa] payer\b/i;
+const EXTRA_NOISE = /\bbons?\s+imm|\bcumul\b|\bvignettes?\b|\bjetons?\b|\bsolde\b/i;
 const WEIGH_LINE = /^\s*(\d+[,.]\d{1,3})\s*kg\s*[x*]\s*(\d+[,.]\d{2})/i;
 const COUNT_LINE = /^\s*(\d{1,2})\s*[x*]\s*(\d+[,.]\d{2})/i;
 const QTY_IN_LABEL = /(\d+(?:[,.]\d+)?)\s*(kg|g|gr|cl|ml|l)\b/i;
+/** Lot : « 3X200G », « 4X150G » → 3 × 200 g. */
+const PACK_IN_LABEL = /\b(\d{1,2})\s*[x×]\s*(\d+(?:[,.]\d+)?)\s*(kg|g|gr|cl|ml|l)\b/i;
+/** Volume tronqué par la caisse : « BTE 50C » = 50 cl. */
+const TRUNCATED_CL = /\b(\d{2,3})\s*c\b/i;
 const MULTI_IN_LABEL = /\bx\s?(\d{1,2})\b|\b(\d{1,2})\s?x\b/i;
 
 const INLINE_MULTI = /\s(\d{1,2})\s*[x×*]\s*\d+[,.]\d{2}\s*(?:€|eur)?\s*$/i;
@@ -45,23 +53,32 @@ export function parseReceipt(text: string): ReceiptLine[] {
     .map((l) => l.replace(/(?<=\d[@oO]*)[@oO](?=[@oO]*\s?(?:kg|g|gr|cl|ml|l)\b)/gi, '0').replace(/(?<=\d)[@oO](?=\d)/g, '0'))
     .map((l) => l.replace(/\s+/g, ' ').trim())
     .filter(Boolean);
+  /** Prix total en bout de ligne de pesée / de quantité (« 2 X 1.97€ 3.94 1 »), s'il est distinct du prix unitaire. */
+  const totalAfter = (raw: string, head: RegExpMatchArray): number | null => {
+    const tail = raw.match(PRICE_END);
+    return tail && tail.index !== undefined && tail.index >= head[0].length ? num(tail[1]) : null;
+  };
   for (const raw of lines) {
+    if (END_OF_ITEMS.test(raw) && out.length) break;
     // Ligne de pesée ou de multiplicité : complète l'article précédent.
     const weigh = raw.match(WEIGH_LINE);
     if (weigh && out.length) {
       const prev = out[out.length - 1];
       prev.qty = num(weigh[1]);
       prev.unit = 'kg';
+      prev.price ??= totalAfter(raw, weigh);
       completed.add(prev);
       continue;
     }
     const cnt = raw.match(COUNT_LINE);
     if (cnt && out.length && !/[a-z]{3,}/i.test(raw.replace(COUNT_LINE, ''))) {
-      out[out.length - 1].count = parseInt(cnt[1], 10);
-      completed.add(out[out.length - 1]);
+      const prev = out[out.length - 1];
+      prev.count = parseInt(cnt[1], 10);
+      prev.price ??= totalAfter(raw, cnt);
+      completed.add(prev);
       continue;
     }
-    if (NOISE.test(raw)) continue;
+    if (NOISE.test(raw) || EXTRA_NOISE.test(raw)) continue;
     const letters = raw.replace(/[^a-zA-ZÀ-ÿ]/g, '');
     if (letters.length < 3) continue;
 
@@ -93,10 +110,18 @@ export function parseReceipt(text: string): ReceiptLine[] {
 
     let qty: number | null = null;
     let unit: Unit | null = null;
+    const pack = label.match(PACK_IN_LABEL);
     const q = label.match(QTY_IN_LABEL);
-    if (q) {
+    const cl = label.match(TRUNCATED_CL);
+    if (pack) {
+      qty = parseInt(pack[1], 10) * num(pack[2]);
+      unit = unitOf(pack[3]);
+    } else if (q) {
       qty = num(q[1]);
       unit = unitOf(q[2]);
+    } else if (cl) {
+      qty = num(cl[1]);
+      unit = 'cl';
     }
     const multi = label.match(MULTI_IN_LABEL);
     if (multi && count === 1) count = parseInt(multi[1] ?? multi[2], 10);
