@@ -3388,3 +3388,16 @@ table {
   border-color: var(--accent);
   box-shadow: 0 0 0 3px var(--accent-soft);
 }
+
+/* En-tête de la fiche d'un repas : vignette à gauche, titre qui passe à la ligne. */
+.hero-top .recipe-art.sm {
+  width: 64px;
+  height: 64px;
+  border-radius: 20px;
+  font-size: 2rem;
+}
+.hero-top > div {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}

@@ -56,7 +56,7 @@ export function MealSheet({ id, onClose, startPicking }: { id: SlotId; onClose: 
         <>
           <section className="meal-hero">
             <div className="hero-top">
-              <RecipeArt recipe={recipe} />
+              <RecipeArt recipe={recipe} size="sm" />
               <div>
                 <p className="label">{label}</p>
                 <h2>{recipe.name}</h2>
@@ -73,7 +73,7 @@ export function MealSheet({ id, onClose, startPicking }: { id: SlotId; onClose: 
                 <Icon name="refresh" size={18} /> Changer
               </button>
               <button className="btn" onClick={() => setEditing(true)}>
-                <Icon name="users" size={18} /> Portions, restes…
+                <Icon name="users" size={18} /> Réglages
               </button>
             </div>
           </section>
