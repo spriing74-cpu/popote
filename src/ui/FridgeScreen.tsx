@@ -7,6 +7,7 @@ import { generateIdeas, rankCatalog, type RankedRecipe, type StockUse } from '..
 import { useCatalog, useStore } from '../state/store';
 import { Empty, ScreenHeader, Segmented, Sheet } from './common';
 import { Icon } from './icons';
+import { SwipeRow } from './SwipeRow';
 import { BarcodeScanner } from './BarcodeScanner';
 import { ReceiptScanner } from './ReceiptScanner';
 import { ItemForm, LOCATION_LABELS, expiryLabel, formatDate } from './ItemForm';
@@ -97,7 +98,7 @@ export function FridgeScreen() {
 }
 
 function StockList({ onEdit }: { onEdit: (i: InventoryItem) => void }) {
-  const { state } = useStore();
+  const { state, dispatch } = useStore();
   const today = todayIso();
   if (state.inventory.length === 0)
     return (
@@ -117,6 +118,10 @@ function StockList({ onEdit }: { onEdit: (i: InventoryItem) => void }) {
             <ul className="shop-list">
               {items.map((i) => (
                 <li key={i.id} className="shop-item">
+                  <SwipeRow
+                    leading={[{ label: 'Modifier', icon: 'pencil', color: '#2f80ed', onAction: () => onEdit(i) }]}
+                    trailing={[{ label: 'Fini', icon: 'trash', color: '#e0352b', onAction: () => dispatch({ type: 'removeInventory', id: i.id }) }]}
+                  >
                   <button className="stock-row" onClick={() => onEdit(i)}>
                     <span className={`dot ${urgency(i, today)}`} aria-hidden />
                     <span className="shop-label">
@@ -130,6 +135,7 @@ function StockList({ onEdit }: { onEdit: (i: InventoryItem) => void }) {
                       {!i.ingredientId && ' · non rattaché'}
                     </span>
                   </button>
+                  </SwipeRow>
                 </li>
               ))}
             </ul>

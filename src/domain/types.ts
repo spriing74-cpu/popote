@@ -249,6 +249,10 @@ export interface Settings {
   colorScheme: 'auto' | 'light' | 'dark';
   /** Afficher les repères nutritionnels (indicatifs) sur les fiches recettes. */
   showNutrition: boolean;
+  /** Pastille sur l'icône de l'app : produits à manger d'ici 2 jours. */
+  appBadge: boolean;
+  /** Retours haptiques (iPhone sous iOS 18+). */
+  haptics: boolean;
   maxActiveMin: number | null;
   maxCostLevel: 1 | 2 | 3 | null;
   excludedAllergens: Allergen[];

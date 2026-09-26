@@ -14,6 +14,8 @@ import { AiServiceCard, EquipmentCard } from './EquipmentScreen';
 import { todayIso } from '../domain/inventory';
 import { NUTRITION_SOURCE } from '../domain/nutrition';
 import { INSEE_SOURCE } from '../data/referencePrices';
+import { useDialog } from './dialog';
+import { isIOS, isStandalone, setBadge } from './ios';
 import { Chip, ListGroup, ListRow, ScreenHeader, Segmented, Sheet, Stepper, Toggle, portionLabel } from './common';
 
 const FACTOR_LABELS: { key: keyof RoleFactors; label: string }[] = [
@@ -136,6 +138,8 @@ export function SettingsScreen() {
         </div>
       </ListGroup>
 
+      <IphoneGroup />
+
       <ListGroup title="Données et aide">
         <ListRow icon="database" tint="#455a64" label="Sauvegarde" detail="Exporter, importer, réinitialiser" onClick={() => setPage('donnees')} />
         <ListRow icon="wand" tint="#7c4dff" label="Service IA" value={s.aiServiceUrl ? 'Activé' : 'Désactivé'} onClick={() => setPage('ia')} />
@@ -148,6 +152,53 @@ export function SettingsScreen() {
         </Sheet>
       )}
     </div>
+  );
+}
+
+/** Intégration iPhone : installation, retours haptiques, pastille sur l'icône. */
+function IphoneGroup() {
+  const { state, dispatch } = useStore();
+  const s = state.settings;
+  const [badgeMsg, setBadgeMsg] = useState<string | null>(null);
+  const standalone = isStandalone();
+  const canBadge = 'setAppBadge' in navigator && 'Notification' in window;
+
+  const toggleBadge = async (on: boolean) => {
+    setBadgeMsg(null);
+    if (!on) {
+      dispatch({ type: 'updateSettings', patch: { appBadge: false } });
+      await setBadge(0);
+      return;
+    }
+    if (!canBadge) {
+      setBadgeMsg(standalone ? 'Pastille non prise en charge par ce système (iOS 16.4 minimum).' : 'Installez d’abord Popote sur l’écran d’accueil.');
+      return;
+    }
+    // iOS n'affiche la pastille qu'après l'accord des notifications (aucune notification n'est envoyée).
+    const perm = Notification.permission === 'granted' ? 'granted' : await Notification.requestPermission();
+    if (perm !== 'granted') {
+      setBadgeMsg('Autorisation refusée : Réglages de l’iPhone › Notifications › Popote.');
+      return;
+    }
+    dispatch({ type: 'updateSettings', patch: { appBadge: true } });
+  };
+
+  return (
+    <ListGroup
+      title="iPhone"
+      footer={badgeMsg ?? 'La pastille affiche le nombre de produits à manger d’ici 2 jours. Popote n’envoie aucune notification.'}
+    >
+      {isIOS && !standalone && (
+        <ListRow
+          icon="share"
+          tint="#2f80ed"
+          label="Installer sur l’écran d’accueil"
+          detail="Dans Safari : bouton Partager, puis « Sur l’écran d’accueil ». Plein écran, hors ligne, pastille."
+        />
+      )}
+      <Toggle checked={s.haptics} onChange={(v) => dispatch({ type: 'updateSettings', patch: { haptics: v } })} label="Retours haptiques" />
+      <Toggle checked={s.appBadge} onChange={toggleBadge} label="Pastille sur l’icône de l’app" />
+    </ListGroup>
   );
 }
 
@@ -395,6 +446,7 @@ function ShoppingSettings() {
 
 function ScanSettings() {
   const { state, dispatch } = useStore();
+  const dialog = useDialog();
   return (
     <section className="card">
       <p className="small">
@@ -402,7 +454,7 @@ function ScanSettings() {
         gardée(s).
       </p>
       <p className="muted small">Popote retient vos corrections de tickets pour reconnaître les abréviations du magasin la fois suivante.</p>
-      <button className="btn block" disabled={Object.keys(state.aliases).length === 0} onClick={() => confirm('Oublier les libellés de ticket appris ?') && dispatch({ type: 'clearAliases' })}>
+      <button className="btn block" disabled={Object.keys(state.aliases).length === 0} onClick={async () => (await dialog.confirm({ title: 'Oublier les libellés appris ?', confirmLabel: 'Oublier', destructive: true })) && dispatch({ type: 'clearAliases' })}>
         Oublier les libellés appris
       </button>
     </section>
@@ -411,6 +463,7 @@ function ScanSettings() {
 
 function BackupCard() {
   const { state, dispatch } = useStore();
+  const dialog = useDialog();
   const fileRef = useRef<HTMLInputElement>(null);
   const [msg, setMsg] = useState<string | null>(null);
   const doExport = () => {
@@ -427,7 +480,7 @@ function BackupCard() {
   const doImport = async (file: File) => {
     try {
       const next = parseImport(await file.text(), CATALOG);
-      if (!confirm('Remplacer toutes les données actuelles par cette sauvegarde ?')) return;
+      if (!(await dialog.confirm({ title: 'Importer cette sauvegarde ?', message: 'Toutes les données actuelles seront remplacées.', confirmLabel: 'Remplacer', destructive: true }))) return;
       dispatch({ type: 'replaceState', state: next });
       setMsg('✓ Sauvegarde importée.');
     } catch (e) {
@@ -459,7 +512,7 @@ function BackupCard() {
       </section>
       <section className="card">
         <p className="muted small">Efface planning, profils, frigo, placard et prix de cet appareil.</p>
-        <button className="btn danger block" onClick={() => confirm('Tout réinitialiser ? Cette action est définitive.') && dispatch({ type: 'reset' })}>
+        <button className="btn danger block" onClick={async () => (await dialog.confirm({ title: 'Tout réinitialiser ?', message: 'Cette action est définitive.', confirmLabel: 'Réinitialiser', destructive: true })) && dispatch({ type: 'reset' })}>
           Réinitialiser l’application
         </button>
       </section>

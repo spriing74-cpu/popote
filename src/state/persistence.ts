@@ -158,6 +158,8 @@ export function normalizeState(raw: unknown, baseCatalog: Catalog): AppState {
     theme: s.theme === 'nothing' || s.theme === 'glass' ? s.theme : base.settings.theme,
     colorScheme: s.colorScheme === 'light' || s.colorScheme === 'dark' ? s.colorScheme : 'auto',
     showNutrition: typeof s.showNutrition === 'boolean' ? s.showNutrition : true,
+    appBadge: s.appBadge === true,
+    haptics: s.haptics !== false,
     maxActiveMin: typeof s.maxActiveMin === 'number' ? s.maxActiveMin : null,
     maxCostLevel: s.maxCostLevel === 1 || s.maxCostLevel === 2 || s.maxCostLevel === 3 ? s.maxCostLevel : null,
     excludedAllergens: arr(s.excludedAllergens, isStr) as AppState['settings']['excludedAllergens'],

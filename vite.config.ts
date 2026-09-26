@@ -36,7 +36,7 @@ export default defineConfig({
         // Les moteurs de scan (plusieurs Mo) ne sont pas pré-téléchargés :
         // ils sont mis en cache à la première utilisation, puis disponibles hors ligne.
         // Idem pour le lecteur de PDF (tickets en ligne).
-        globIgnores: ['scan/**', 'assets/pdf*'],
+        globIgnores: ['scan/**', 'assets/pdf*', 'icons/splash/**'],
         navigateFallback: 'index.html',
         runtimeCaching: [
           {

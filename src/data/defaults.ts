@@ -51,6 +51,8 @@ export function defaultSettings(): Settings {
     theme: 'glass',
     colorScheme: 'auto',
     showNutrition: true,
+    appBadge: false,
+    haptics: true,
     maxActiveMin: null,
     maxCostLevel: null,
     excludedAllergens: [],

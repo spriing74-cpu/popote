@@ -6,7 +6,7 @@ PWA en français pour planifier les repas **du dimanche au dimanche** par défau
 
 ```bash
 npm install
-npm test            # 81 tests : portions, restes, courses, unités, conservation, durée du planning, reprise des anciennes sauvegardes, tickets (photo, PDF, texte), dates, codes-barres, stock, vide-frigo, prix, import TheMealDB, équipements, suggestions qui apprennent
+npm test            # 82 tests : portions, restes, courses, unités, conservation, durée du planning, reprise des anciennes sauvegardes, tickets (photo, PDF, texte), dates, codes-barres, stock, vide-frigo, prix, import TheMealDB, équipements, suggestions qui apprennent
 npm run dev         # http://localhost:5173 (sans service worker)
 npm run build       # contrôle des types + build de production dans dist/
 npm run preview     # http://localhost:4173 (avec service worker, pour tester le hors-ligne)
@@ -73,6 +73,14 @@ Les dépendances vont de l'interface vers le domaine, jamais l'inverse. La liste
 - **Recettes** : recherche par nom ou par ingrédient, filtres (déjeuner froid/chantier, dîner, ≤ 20 min, économique, restes, sans viande, favoris). La fiche donne les quantités **par profil**, des repères nutritionnels indicatifs par personne (table Ciqual de l'Anses, désactivables), les étapes, les temps, la conservation, le transport et les allergènes.
 - **Courses** : liste par rayon, progression, cases persistantes, détail des sources, « J'en ai toujours », ajout rapide (« 2 éponges »), partage, section « déjà à la maison ». Le budget indicatif a été retiré ; les relevés de prix restent dans Réglages.
 - **Réglages** : rubriques Foyer (profils : jours travaillés, lieu du déjeuner, micro-ondes, facteurs, compléments), Planning (semaine et batch cooking, suggestions, goûts et exclusions dont les plats « plus jamais »), Cuisine et courses (équipements, placard, courses, prix, scan), Apparence (**Liquid Glass** ou **Nothing**, clair / sombre / auto), Données et aide (sauvegarde, service IA, conseils et sources).
+
+### Expérience iPhone
+
+- **Gestes** : balayer depuis le bord gauche pour revenir (l'écran suit le doigt) ; balayer un repas vers la droite pour une autre idée, vers la gauche pour le vider ; dans Courses, balayer vers la droite pour cocher, vers la gauche pour « j'en ai toujours » (ou supprimer un article ajouté) ; dans Frigo, balayer pour modifier ou retirer un produit. Un balayage complet déclenche l'action directement.
+- **Appui long** sur un repas ou une recette : menu d'actions iOS. Les confirmations utilisent des feuilles d'action iOS (plus de fenêtres du navigateur).
+- **Retours haptiques** (iOS 18+, désactivables), interrupteurs natifs.
+- Grand titre qui se replie en barre floutée, barre d'onglets qui se rétracte en défilant, re-toucher un onglet remonte en haut, chaque onglet garde sa position, transitions animées.
+- **Écrans de démarrage** pour tous les iPhone récents (`npm run icons`), **pastille** sur l'icône (produits à manger d'ici 2 jours, après accord des notifications, aucune notification envoyée), **écran toujours allumé** pendant une recette, bouton retour d'Android / de Safari pris en charge.
 
 ### Modèle de données (résumé)
 

@@ -90,6 +90,10 @@ export interface SuggestOptions {
   learning?: Learning;
   /** true : ne remplit que les créneaux vides ; false : repart de zéro (convives conservés). */
   onlyEmpty: boolean;
+  /** Ne propose que ce créneau (les autres restent tels quels). */
+  only?: SlotId;
+  /** Recettes à éviter (ex. celle qu'on vient de retirer). */
+  avoid?: string[];
 }
 
 function clearRecipe(slot: Slot): Slot {
@@ -166,8 +170,8 @@ export function suggestPlan(
     const id = ids[i];
     const slot = slots[id];
     const existing = effectiveRecipeId(next, id);
-    if (existing) {
-      previousMain = catalog.recipes[existing]?.mainIngredient ?? null;
+    if (existing || (opts.only && id !== opts.only)) {
+      if (existing) previousMain = catalog.recipes[existing]?.mainIngredient ?? null;
       continue;
     }
     if (presentProfiles(slot).length === 0) continue;
@@ -208,6 +212,7 @@ export function suggestPlan(
       score += (mainUse.get(r.mainIngredient) ?? 0) * 4;
       if (previousMain && r.mainIngredient === previousMain) score += 6;
       if (favorites.includes(r.id)) score -= 1.5;
+      if (opts.avoid?.includes(r.id)) score += 200;
       score += learningScore(r, opts.learning, catalog);
       // Conservation vis-à-vis du jour de préparation (plat + accompagnement par défaut).
       const stored = dayIndex(day) - dayIndex(slot.prepDay);

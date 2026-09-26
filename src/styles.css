@@ -156,7 +156,8 @@ body {
 }
 body {
   -webkit-tap-highlight-color: transparent;
-  overscroll-behavior-y: none;
+  /* Rebond natif d'iOS conservé ; pas de « tirer pour actualiser » sur Android. */
+  overscroll-behavior-y: contain;
   min-height: 100dvh;
 }
 body::before {
@@ -1585,7 +1586,9 @@ a {
   z-index: 20;
   display: flex;
   flex-direction: column;
-  animation: sheet-in 0.28s cubic-bezier(0.2, 0.9, 0.3, 1);
+  animation: sheet-in 0.34s cubic-bezier(0.2, 0.9, 0.3, 1);
+  box-shadow: -12px 0 32px rgba(0, 0, 0, 0.12);
+  touch-action: pan-y;
 }
 .sheet::before {
   content: '';
@@ -1594,10 +1597,10 @@ a {
   background: var(--bg-art);
   z-index: -1;
 }
+/* Arrivée par la droite, comme une navigation iOS. */
 @keyframes sheet-in {
   from {
-    transform: translateY(30px);
-    opacity: 0;
+    transform: translate3d(100%, 0, 0);
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -2067,4 +2070,317 @@ details summary {
   height: 50px;
   border-radius: 17px;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+
+/* =========================================================================
+   Intégration iOS : gestes, feuilles d'action, barres qui se replient
+   ========================================================================= */
+
+/* Comportement tactile d'app : pas de sélection ni de menu « Copier » sur l'interface,
+   pas de délai de double-tape, retour visuel à l'appui. */
+button,
+.tab,
+.chip,
+.list-row,
+.slot,
+.tile,
+.source-tile,
+.stock-row,
+.shop-text,
+.recipe-card-main,
+.day-pill {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  touch-action: manipulation;
+}
+img {
+  -webkit-touch-callout: none;
+}
+.list-row:active,
+.slot:active,
+.stock-row:active,
+.shop-text:active,
+.recipe-card-main:active,
+.tile:active,
+.source-tile:active,
+.day-pill:active {
+  background-color: color-mix(in srgb, var(--text) 6%, transparent);
+}
+.tile:active,
+.source-tile:active,
+.day-pill:active,
+.chip:active,
+.icon-btn:active {
+  transform: scale(0.96);
+}
+.sheet-body {
+  overscroll-behavior: contain;
+}
+
+/* Voile sous un écran empilé (s'éclaircit quand on balaie pour revenir). */
+.sheet-dim {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  background: rgba(0, 0, 0, 0.18);
+  pointer-events: none;
+  transition: opacity 0.26s;
+  animation: dim-in 0.34s ease-out;
+}
+@keyframes dim-in {
+  from {
+    opacity: 0;
+  }
+}
+
+/* ---------- Lignes balayables ---------- */
+.swipe-row {
+  position: relative;
+  overflow: hidden;
+}
+.swipe-content {
+  position: relative;
+  z-index: 1;
+  touch-action: pan-y;
+  will-change: transform;
+}
+.swipe-actions {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  z-index: 0;
+  overflow: hidden;
+}
+.swipe-actions.leading {
+  left: 0;
+}
+.swipe-actions.trailing {
+  right: 0;
+  flex-direction: row-reverse;
+}
+.swipe-action {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  border: 0;
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 3px;
+  font-size: 0.72rem;
+  font-weight: 650;
+  transition: flex 0.2s ease;
+}
+.swipe-actions.leading .swipe-action {
+  align-items: flex-start;
+  padding-left: 22px;
+}
+.swipe-actions.trailing .swipe-action {
+  align-items: flex-end;
+  padding-right: 22px;
+}
+/* Le contenu d'une ligne masque les actions tant qu'on ne balaie pas. */
+.shop-list .swipe-content,
+.day .swipe-content {
+  background: var(--surface-solid);
+}
+:root[data-theme='glass'] .shop-list .swipe-content,
+:root[data-theme='glass'] .day .swipe-content {
+  background: color-mix(in srgb, var(--surface-solid) 90%, transparent);
+}
+.day .swipe-row {
+  margin: 0 -14px;
+}
+.day .swipe-row .slot {
+  border-top: 0;
+  padding-left: 14px;
+  padding-right: 14px;
+}
+.day .swipe-row + .swipe-row {
+  border-top: var(--divider);
+}
+
+/* ---------- Feuille d'action ---------- */
+.action-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: rgba(0, 0, 0, 0.32);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0 8px calc(env(safe-area-inset-bottom) + 8px);
+  animation: dim-in 0.2s ease-out;
+}
+.action-backdrop.leaving {
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.action-sheet {
+  width: min(520px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  animation: action-in 0.32s cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+.action-backdrop.leaving .action-sheet {
+  transform: translateY(40px);
+  transition: transform 0.2s;
+}
+@keyframes action-in {
+  from {
+    transform: translateY(110%);
+  }
+}
+.action-group {
+  border-radius: 16px;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--surface-solid) 86%, transparent);
+  -webkit-backdrop-filter: saturate(180%) blur(30px);
+  backdrop-filter: saturate(180%) blur(30px);
+}
+.action-head {
+  padding: 14px 16px 12px;
+  text-align: center;
+}
+.action-title {
+  margin: 0;
+  font-size: 0.82rem;
+  font-weight: 650;
+  color: var(--muted);
+}
+.action-message {
+  margin: 2px 0 0;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+.action-btn {
+  display: block;
+  width: 100%;
+  min-height: 56px;
+  border: 0;
+  border-top: 0.5px solid var(--line);
+  background: transparent;
+  color: var(--info);
+  font-size: 1.1rem;
+}
+:root[data-theme='glass'] .action-btn {
+  color: #0a7aff;
+}
+.action-group > .action-btn:first-child {
+  border-top: 0;
+}
+.action-btn.destructive,
+:root[data-theme='glass'] .action-btn.destructive {
+  color: var(--danger);
+}
+.action-btn.cancel {
+  border-radius: 16px;
+  border: 0;
+  font-weight: 650;
+  background: var(--surface-solid);
+}
+.action-btn:active {
+  background: color-mix(in srgb, var(--text) 8%, transparent);
+}
+:root[data-theme='nothing'] .action-btn {
+  color: var(--text);
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  font-size: 0.85rem;
+  letter-spacing: 0.06em;
+}
+:root[data-theme='nothing'] .action-btn.destructive {
+  color: var(--accent);
+}
+
+/* ---------- Barre compacte quand le grand titre sort de l'écran ---------- */
+.header-sentinel {
+  height: 1px;
+  margin-top: -1px;
+}
+.nav-compact {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 15;
+  height: calc(env(safe-area-inset-top) + 48px);
+  padding: env(safe-area-inset-top) 16px 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--bg) 72%, transparent);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  backdrop-filter: saturate(180%) blur(20px);
+  border-bottom: 0.5px solid var(--line);
+  opacity: 0;
+  transform: translateY(-8px);
+  pointer-events: none;
+  transition: opacity 0.2s, transform 0.2s;
+}
+.nav-compact.visible {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+}
+.nav-compact > span {
+  font-weight: 650;
+  font-size: 1.02rem;
+}
+.nav-compact .screen-actions {
+  position: absolute;
+  right: 12px;
+  bottom: 5px;
+}
+.nav-compact .icon-btn {
+  width: 36px;
+  height: 36px;
+  box-shadow: none;
+}
+:root[data-theme='nothing'] .nav-compact > span {
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.8rem;
+}
+/* La frise des jours se colle sous la barre compacte. */
+.day-strip {
+  top: calc(env(safe-area-inset-top) + 48px);
+}
+
+/* ---------- Barre d'onglets qui se rétracte au défilement (iOS 26) ---------- */
+.tabbar {
+  transform-origin: bottom center;
+  transition: transform 0.35s cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+.tabbar.minimized {
+  transform: translateX(-50%) scale(0.84);
+}
+.tab > span:not(.tab-badge) {
+  transition: opacity 0.25s;
+}
+.tabbar.minimized .tab > span:not(.tab-badge) {
+  opacity: 0;
+}
+
+/* ---------- Transition entre onglets (View Transitions) ---------- */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 0.22s;
+}
+.tabbar {
+  view-transition-name: tabbar;
+}
+@media (prefers-reduced-motion: reduce) {
+  .sheet,
+  .sheet-dim,
+  .action-sheet,
+  .action-backdrop {
+    animation: none !important;
+  }
 }

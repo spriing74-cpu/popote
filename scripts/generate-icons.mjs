@@ -99,3 +99,61 @@ const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
 </svg>`;
 writeFileSync(join(outDir, 'favicon.svg'), svg);
 console.log('Icônes générées dans', outDir);
+
+// ---------- Écrans de démarrage iOS (apple-touch-startup-image) ----------
+// iOS n'utilise pas le manifeste pour l'écran de lancement : sans ces images, il affiche un écran blanc.
+const SPLASH_BG = [241, 238, 244];
+const SPLASHES = [
+  [440, 956, 3], [402, 874, 3], [430, 932, 3], [393, 852, 3], [428, 926, 3], [390, 844, 3],
+  [414, 896, 3], [375, 812, 3], [414, 896, 2], [375, 667, 2], [320, 568, 2],
+];
+
+function splash(w, h) {
+  const icon = Math.round(Math.min(w, h) * 0.3);
+  const x0 = Math.round((w - icon) / 2), y0 = Math.round((h - icon) / 2);
+  const raw = Buffer.alloc(h * (w * 3 + 1));
+  const ss = 3;
+  for (let y = 0; y < h; y++) {
+    const row = y * (w * 3 + 1);
+    raw[row] = 0;
+    for (let x = 0; x < w; x++) {
+      const o = row + 1 + x * 3;
+      let c = SPLASH_BG;
+      if (x >= x0 && x < x0 + icon && y >= y0 && y < y0 + icon) {
+        // Icône aux coins arrondis, suréchantillonnée.
+        let r = 0, g = 0, b = 0;
+        for (let sy = 0; sy < ss; sy++)
+          for (let sx = 0; sx < ss; sx++) {
+            const u = (x - x0 + (sx + 0.5) / ss) / icon, v = (y - y0 + (sy + 0.5) / ss) / icon;
+            const k = 0.22, du = Math.max(k - u, u - (1 - k), 0), dv = Math.max(k - v, v - (1 - k), 0);
+            const p = Math.hypot(du, dv) > k ? SPLASH_BG : colorAt(u, v, 1.15);
+            r += p[0]; g += p[1]; b += p[2];
+          }
+        c = [r / ss / ss, g / ss / ss, b / ss / ss].map(Math.round);
+      }
+      raw[o] = c[0]; raw[o + 1] = c[1]; raw[o + 2] = c[2];
+    }
+  }
+  const ihdr = Buffer.alloc(13);
+  ihdr.writeUInt32BE(w, 0);
+  ihdr.writeUInt32BE(h, 4);
+  ihdr[8] = 8; ihdr[9] = 2;
+  return Buffer.concat([
+    Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+    chunk('IHDR', ihdr),
+    chunk('IDAT', deflateSync(raw, { level: 9 })),
+    chunk('IEND', Buffer.alloc(0)),
+  ]);
+}
+
+const splashDir = join(outDir, 'splash');
+mkdirSync(splashDir, { recursive: true });
+const links = [];
+for (const [dw, dh, dpr] of SPLASHES) {
+  const name = `splash-${dw * dpr}x${dh * dpr}.png`;
+  writeFileSync(join(splashDir, name), splash(dw * dpr, dh * dpr));
+  links.push(
+    `    <link rel="apple-touch-startup-image" media="(device-width: ${dw}px) and (device-height: ${dh}px) and (-webkit-device-pixel-ratio: ${dpr}) and (orientation: portrait)" href="icons/splash/${name}" />`,
+  );
+}
+console.log('Écrans de démarrage générés. Balises pour index.html :\n' + links.join('\n'));

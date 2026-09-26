@@ -13,14 +13,14 @@ import { SlotEditor } from './SlotEditor';
  * Toucher un repas du planning : la recette s'affiche directement.
  * Un créneau vide ouvre tout de suite le choix d'une recette.
  */
-export function MealSheet({ id, onClose }: { id: SlotId; onClose: () => void }) {
+export function MealSheet({ id, onClose, startPicking }: { id: SlotId; onClose: () => void; startPicking?: boolean }) {
   const { state, dispatch } = useStore();
   const catalog = useCatalog();
   const plan = state.plan;
   const slot = plan.slots[id];
   const recipeId = effectiveRecipeId(plan, id);
   const recipe = recipeId ? catalog.recipes[recipeId] : null;
-  const [picking, setPicking] = useState(!recipe && !slot?.leftoverOf);
+  const [picking, setPicking] = useState(!!startPicking || (!recipe && !slot?.leftoverOf));
   const [editing, setEditing] = useState(false);
   if (!slot) return null;
   const label = slotLabel(plan, id);

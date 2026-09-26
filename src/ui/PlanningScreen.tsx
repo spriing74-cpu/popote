@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import type { SlotId } from '../domain/types';
 import { checkFreshness } from '../domain/freshness';
-import { suggestPlan } from '../domain/planner';
+import { suggestPlan, withRecipe } from '../domain/planner';
 import { cookingPlanFor, dinerConsumption } from '../domain/portions';
 import { aggregate } from '../domain/shopping';
 import { formatQty } from '../domain/units';
@@ -33,6 +33,9 @@ import { stockEntries, stockUrgencyMap } from '../domain/antigaspi';
 import { CATEGORY_EMOJI, Chip, Empty, FreshnessBadge, IconButton, ScreenHeader, Segmented, Sheet, Stepper } from './common';
 import { Icon } from './icons';
 import { MealSheet } from './MealSheet';
+import { SwipeRow } from './SwipeRow';
+import { useDialog } from './dialog';
+import { haptic, useLongPress } from './ios';
 import type { Tab } from '../App';
 
 type View = 'repas' | 'preparation';
@@ -41,15 +44,22 @@ export function PlanningScreen({ goTo }: { goTo: (t: Tab) => void }) {
   const { state, dispatch } = useStore();
   const catalog = useCatalog();
   const [view, setView] = useState<View>('repas');
-  const [open, setOpen] = useState<SlotId | null>(null);
+  const [open, setOpen] = useState<{ id: SlotId; pick?: boolean } | null>(null);
+  const dialog = useDialog();
   const [weekSheet, setWeekSheet] = useState(false);
   const plan = state.plan;
   const ids = slotIds(plan);
   const filled = ids.filter((id) => effectiveRecipeId(plan, id)).length;
   const today = todayIso();
 
-  const suggest = (onlyEmpty: boolean) => {
-    if (!onlyEmpty && filled > 0 && !confirm('Reproposer tous les repas ? Vos choix actuels seront remplacés (les convives sont conservés).')) return;
+  const suggest = async (onlyEmpty: boolean) => {
+    if (
+      !onlyEmpty &&
+      filled > 0 &&
+      !(await dialog.confirm({ title: 'Tout refaire ?', message: 'Vos choix actuels seront remplacés (les convives sont conservés).', confirmLabel: 'Reproposer tous les repas', destructive: true }))
+    )
+      return;
+    haptic('medium');
     const seed = Math.floor(Math.random() * 1e9);
     const learning = {
       ratings: state.ratings,
@@ -125,7 +135,7 @@ export function PlanningScreen({ goTo }: { goTo: (t: Tab) => void }) {
                 </h2>
                 {MEALS.map((m) => {
                   const id = slotId(d, m);
-                  return <SlotRow key={id} id={id} onOpen={() => setOpen(id)} />;
+                  return <SlotRow key={id} id={id} onOpen={(pick) => setOpen({ id, pick })} />;
                 })}
               </section>
             ))}
@@ -135,17 +145,19 @@ export function PlanningScreen({ goTo }: { goTo: (t: Tab) => void }) {
           </div>
         </>
       ) : (
-        <PrepView onOpen={setOpen} />
+        <PrepView onOpen={(id) => setOpen({ id })} />
       )}
 
-      {open && <MealSheet id={open} onClose={() => setOpen(null)} />}
+      {open && <MealSheet id={open.id} startPicking={open.pick} onClose={() => setOpen(null)} />}
       {weekSheet && <WeekSheet onClose={() => setWeekSheet(false)} />}
     </div>
   );
 }
 
-function SlotRow({ id, onOpen }: { id: SlotId; onOpen: () => void }) {
-  const { state } = useStore();
+/** Un repas : toucher = recette, balayer = vider / autre idée, appui long = menu. */
+function SlotRow({ id, onOpen }: { id: SlotId; onOpen: (pick?: boolean) => void }) {
+  const { state, dispatch } = useStore();
+  const dialog = useDialog();
   const catalog = useCatalog();
   const plan = state.plan;
   const slot = plan.slots[id];
@@ -161,8 +173,45 @@ function SlotRow({ id, onOpen }: { id: SlotId; onOpen: () => void }) {
   }, [recipe, slot.leftoverOf, state.inventory, catalog]);
   const meal = id.endsWith('dejeuner') ? 'dejeuner' : 'diner';
 
+  /** Une autre recette pour ce seul repas (en évitant celle qu'on retire). */
+  const reroll = () => {
+    const cleared = { ...plan, slots: { ...plan.slots, [id]: withRecipe(slot, null) } };
+    const learning = { ratings: state.ratings, recentWeeks: state.history.map((h) => h.recipeIds), stockUrgency: stockUrgencyMap(state.inventory, catalog, todayIso()) };
+    const next = suggestPlan(catalog, cleared, state.profiles, state.settings, state.favorites, {
+      seed: Math.floor(Math.random() * 1e9),
+      onlyEmpty: true,
+      only: id,
+      avoid: rid ? [rid] : [],
+      learning,
+    });
+    dispatch({ type: 'setRecipe', slot: id, recipeId: next.slots[id].recipeId });
+  };
+  const clear = () => dispatch({ type: 'clearSlot', slot: id });
+
+  const menu = async () => {
+    const choice = await dialog.actions({
+      title: slotLabel(plan, id),
+      message: recipe?.name,
+      actions: [
+        ...(recipe ? [{ id: 'voir', label: 'Voir la recette' }] : []),
+        { id: 'changer', label: recipe ? 'Choisir un autre plat' : 'Choisir un plat' },
+        { id: 'idee', label: recipe ? 'Autre idée au hasard' : 'Proposer un plat' },
+        ...(recipe || slot.leftoverOf ? [{ id: 'vider', label: 'Vider ce repas', destructive: true }] : []),
+      ],
+    });
+    if (choice === 'voir') onOpen();
+    if (choice === 'changer') onOpen(true);
+    if (choice === 'idee') reroll();
+    if (choice === 'vider') clear();
+  };
+  const press = useLongPress(menu);
+
   return (
-    <button className={`slot ${recipe ? '' : 'slot-empty'}`} onClick={onOpen}>
+    <SwipeRow
+      leading={[{ label: recipe ? 'Autre idée' : 'Proposer', icon: 'sparkles', color: '#2f80ed', onAction: reroll }]}
+      trailing={recipe || slot.leftoverOf ? [{ label: 'Vider', icon: 'trash', color: '#e0352b', onAction: clear }] : []}
+    >
+    <button className={`slot ${recipe ? '' : 'slot-empty'}`} onClick={() => onOpen()} {...press}>
       <span className="slot-thumb" aria-hidden>
         {recipe?.imageUrl ? <img src={recipe.imageUrl} alt="" loading="lazy" /> : recipe ? CATEGORY_EMOJI[recipe.category] ?? '🍽️' : <Icon name="plus" size={20} />}
       </span>
@@ -185,6 +234,7 @@ function SlotRow({ id, onOpen }: { id: SlotId; onOpen: () => void }) {
       </span>
       <Icon name="chevron" size={18} className="chevron" />
     </button>
+    </SwipeRow>
   );
 }
 
@@ -197,9 +247,11 @@ function WeekSheet({ onClose }: { onClose: () => void }) {
   const lastDay = addDays(plan.weekOf, plan.days - 1);
   const nextStart = lastDay >= todayIso() ? upcomingWeekday(s.startWeekday, new Date(lastDay + 'T12:00:00')) : upcomingWeekday(s.startWeekday);
 
-  const setDays = (days: number) => {
+  const dialog = useDialog();
+  const setDays = async (days: number) => {
     const lost = slotIds(plan).filter((id) => Number(id.split('-')[0].slice(1)) >= days && effectiveRecipeId(plan, id)).length;
-    if (lost > 0 && !confirm(`${lost} repas prévu(s) sur les jours retirés seront supprimés. Continuer ?`)) return;
+    if (lost > 0 && !(await dialog.confirm({ title: `Raccourcir à ${days} jour${days > 1 ? 's' : ''} ?`, message: `${lost} repas prévu(s) sur les jours retirés seront supprimés.`, confirmLabel: 'Raccourcir', destructive: true })))
+      return;
     dispatch({ type: 'setPlanDays', days });
   };
 
@@ -240,8 +292,8 @@ function WeekSheet({ onClose }: { onClose: () => void }) {
         </p>
         <button
           className="btn primary block"
-          onClick={() => {
-            if (!confirm('Commencer une nouvelle semaine ? Le planning actuel sera vidé.')) return;
+          onClick={async () => {
+            if (!(await dialog.confirm({ title: 'Nouvelle semaine ?', message: 'Le planning actuel sera vidé.', confirmLabel: 'Commencer la nouvelle semaine', destructive: true }))) return;
             dispatch({ type: 'newWeek', weekOf: nextStart, days: s.planDays });
             onClose();
           }}
@@ -257,6 +309,7 @@ function WeekSheet({ onClose }: { onClose: () => void }) {
 function PrepView({ onOpen }: { onOpen: (id: SlotId) => void }) {
   const { state, dispatch } = useStore();
   const catalog = useCatalog();
+  const dialog = useDialog();
   const plan = state.plan;
 
   const groups = useMemo(() => {
@@ -349,8 +402,15 @@ function PrepView({ onOpen }: { onOpen: (id: SlotId) => void }) {
                 ) : (
                   <button
                     className="btn block"
-                    onClick={() => {
-                      if (!confirm('Marquer ce plat comme cuisiné ? Les quantités utilisées (plat et accompagnements) seront retirées du stock du frigo.')) return;
+                    onClick={async () => {
+                      if (
+                        !(await dialog.confirm({
+                          title: 'C’est cuisiné ?',
+                          message: 'Les quantités utilisées (plat et accompagnements) seront retirées du stock du frigo.',
+                          confirmLabel: 'Marquer comme cuisiné',
+                        }))
+                      )
+                        return;
                       dispatch({ type: 'markCooked', slot: it.sourceSlot, lines: [...it.lines, ...it.sideLines], date: todayIso() });
                     }}
                   >

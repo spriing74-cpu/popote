@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { registerSW } from 'virtual:pwa-register';
 import { StoreProvider } from './state/store';
 import { App } from './App';
+import { DialogProvider } from './ui/dialog';
 // Police « matrice de points » du thème Nothing (auto-hébergée, disponible hors ligne).
 import '@fontsource/doto/latin-900.css';
 // Polices du thème Liquid Glass : Geist (texte) et Instrument Serif (titres).
@@ -23,7 +24,9 @@ if (navigator.storage?.persist) navigator.storage.persist().catch(() => undefine
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <StoreProvider>
-      <App />
+      <DialogProvider>
+        <App />
+      </DialogProvider>
     </StoreProvider>
   </StrictMode>,
 );

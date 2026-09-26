@@ -4,6 +4,8 @@ import { recipeAllowed, recipeFitsSlot, slotConstraint } from '../domain/planner
 import { useCatalog, useStore } from '../state/store';
 import { CATEGORY_EMOJI, COST_LABEL, Chip, Empty, ScreenHeader, Segmented, Sheet } from './common';
 import { Icon } from './icons';
+import { useDialog } from './dialog';
+import { useLongPress } from './ios';
 import { RecipeDetail } from './RecipeDetail';
 import { ExplorerScreen } from './ExplorerScreen';
 import { slotLabel } from '../domain/week';
@@ -24,10 +26,28 @@ const FILTERS: { id: Filter; label: string; test: (r: Recipe, fav: string[], rat
 const norm = (s: string) => s.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
 
 export function RecipeCard({ recipe, onOpen, action }: { recipe: Recipe; onOpen: () => void; action?: ReactNode }) {
-  const { state } = useStore();
+  const { state, dispatch } = useStore();
+  const dialog = useDialog();
+  const fav = state.favorites.includes(recipe.id);
+  const rating = state.ratings[recipe.id];
+  const press = useLongPress(async () => {
+    const c = await dialog.actions({
+      title: recipe.name,
+      actions: [
+        { id: 'voir', label: 'Voir la recette' },
+        { id: 'fav', label: fav ? 'Retirer des favoris' : 'Ajouter aux favoris' },
+        { id: 'aime', label: rating === 1 ? 'Retirer « On aime »' : '👍 On aime' },
+        { id: 'jamais', label: rating === -1 ? 'Autoriser à nouveau' : '👎 Plus jamais', destructive: rating !== -1 },
+      ],
+    });
+    if (c === 'voir') onOpen();
+    if (c === 'fav') dispatch({ type: 'toggleFavorite', recipeId: recipe.id });
+    if (c === 'aime') dispatch({ type: 'rateRecipe', recipeId: recipe.id, value: rating === 1 ? 0 : 1 });
+    if (c === 'jamais') dispatch({ type: 'rateRecipe', recipeId: recipe.id, value: rating === -1 ? 0 : -1 });
+  });
   return (
     <article className="card recipe-card">
-      <button className="recipe-card-main" onClick={onOpen}>
+      <button className="recipe-card-main" onClick={onOpen} {...press}>
         <span className="slot-thumb" aria-hidden>
           {recipe.imageUrl ? <img src={recipe.imageUrl} alt="" loading="lazy" /> : CATEGORY_EMOJI[recipe.category] ?? '🍽️'}
         </span>

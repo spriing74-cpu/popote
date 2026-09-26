@@ -150,3 +150,19 @@ describe('suggestions qui apprennent', () => {
     expect(withStock).toBeGreaterThan(without * 1.5);
   });
 });
+
+describe('autre idée pour un seul repas', () => {
+  it('ne change que le créneau demandé et évite la recette retirée', () => {
+    const profiles = defaultProfiles();
+    const settings = { ...defaultSettings(), useLeftoversInSuggestions: false };
+    const full = suggestPlan(CATALOG, emptyPlan(profiles, settings.prepWeekdays, WEEK_OF, settings.planDays), profiles, settings, [], { seed: 5, onlyEmpty: true });
+    const old = full.slots['d3-diner'].recipeId!;
+    const cleared = { ...full, slots: { ...full.slots, 'd3-diner': withRecipe(full.slots['d3-diner'], null) } };
+    for (let seed = 1; seed <= 10; seed++) {
+      const next = suggestPlan(CATALOG, cleared, profiles, settings, [], { seed, onlyEmpty: true, only: 'd3-diner', avoid: [old] });
+      expect(next.slots['d3-diner'].recipeId).toBeTruthy();
+      expect(next.slots['d3-diner'].recipeId).not.toBe(old);
+      for (const id of IDS) if (id !== 'd3-diner') expect(next.slots[id].recipeId).toBe(full.slots[id].recipeId);
+    }
+  });
+});

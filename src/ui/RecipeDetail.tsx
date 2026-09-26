@@ -8,6 +8,7 @@ import { PROFILE_IDS, effectiveRecipeId, slotIds, slotLabel } from '../domain/we
 import { useCatalog, useStore } from '../state/store';
 import { CATEGORY_EMOJI, COST_LABEL, nfr } from './common';
 import { Icon } from './icons';
+import { haptic, useWakeLock } from './ios';
 import { adviceFor } from '../domain/equipment';
 import { NUTRITION_SOURCE, portionNutrition } from '../domain/nutrition';
 
@@ -31,6 +32,8 @@ export function RecipeDetail({
   const recipe = given ?? (recipeId ? catalog.recipes[recipeId] : undefined);
   const [target, setTarget] = useState<SlotId | ''>('');
   const [added, setAdded] = useState<string | null>(null);
+  const [awake, setAwake] = useState(false);
+  const wakeSupported = useWakeLock(awake);
   if (!recipe) return <p>Recette introuvable.</p>;
   const allergens = recipeAllergens(recipe);
   const advice = adviceFor(recipe, state.equipment, 2);
@@ -190,7 +193,21 @@ export function RecipeDetail({
         </div>
       )}
 
-      <h3>Étapes</h3>
+      <div className="row space-between">
+        <h3>Étapes</h3>
+        {wakeSupported && (
+          <button
+            className={awake ? 'chip active' : 'chip'}
+            aria-pressed={awake}
+            onClick={() => {
+              haptic('light');
+              setAwake((v) => !v);
+            }}
+          >
+            <Icon name="sun" size={16} /> {awake ? 'Écran allumé' : 'Garder l’écran allumé'}
+          </button>
+        )}
+      </div>
       <ol className="steps">
         {recipe.steps.map((s, i) => (
           <li key={i}>{s}</li>

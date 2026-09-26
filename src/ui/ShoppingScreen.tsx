@@ -8,6 +8,8 @@ import { inventoryAsPantry, todayIso } from '../domain/inventory';
 import { useCatalog, useStore } from '../state/store';
 import { Chip, Empty, IconButton, ScreenHeader, uid } from './common';
 import { Icon } from './icons';
+import { SwipeRow } from './SwipeRow';
+import { haptic } from './ios';
 
 /** Liste de courses calculée depuis le planning (partagée avec le badge de l'onglet). */
 export function useShoppingList() {
@@ -152,22 +154,37 @@ export function ShoppingScreen() {
 function ShopRow({ item, expanded, onExpand }: { item: ShoppingItem; expanded: boolean; onExpand: () => void }) {
   const { state, dispatch } = useStore();
   const checked = !!state.checked[item.key];
+  const toggle = () => {
+    haptic(checked ? 'light' : 'medium');
+    dispatch({ type: 'toggleChecked', key: item.key });
+  };
+  const always = () => item.ingredientId && dispatch({ type: 'setPantryItem', item: { ingredientId: item.ingredientId, qty: null, unit: item.unit } });
+  const remove = () => dispatch({ type: 'removeManualItem', id: item.key.replace('manuel:', '') });
   return (
     <li className={checked ? 'shop-item checked' : 'shop-item'}>
-      <div className="shop-row">
-        <label className="shop-check">
-          <input type="checkbox" checked={checked} onChange={() => dispatch({ type: 'toggleChecked', key: item.key })} aria-label={`${item.label} pris`} />
-        </label>
-        <button className="shop-text" onClick={onExpand} aria-expanded={expanded}>
-          <span className="shop-label">{item.label}</span>
-          <span className="shop-qty">{item.display}</span>
-          {!item.manual && <span className="shop-detail">{item.detail}</span>}
-        </button>
-      </div>
+      <SwipeRow
+        leading={[{ label: checked ? 'Décocher' : 'Pris', icon: checked ? 'refresh' : 'check', color: '#1f9d55', onAction: toggle }]}
+        trailing={
+          item.manual
+            ? [{ label: 'Supprimer', icon: 'trash', color: '#e0352b', onAction: remove }]
+            : [{ label: 'J’en ai', icon: 'box', color: '#8d6e63', onAction: always }]
+        }
+      >
+        <div className="shop-row">
+          <label className="shop-check">
+            <input type="checkbox" checked={checked} onChange={toggle} aria-label={`${item.label} pris`} />
+          </label>
+          <button className="shop-text" onClick={onExpand} aria-expanded={expanded}>
+            <span className="shop-label">{item.label}</span>
+            <span className="shop-qty">{item.display}</span>
+            {!item.manual && <span className="shop-detail">{item.detail}</span>}
+          </button>
+        </div>
+      </SwipeRow>
       {expanded && (
         <div className="shop-more">
           {item.manual ? (
-            <button className="btn danger small" onClick={() => dispatch({ type: 'removeManualItem', id: item.key.replace('manuel:', '') })}>
+            <button className="btn danger small" onClick={remove}>
               Supprimer cet article
             </button>
           ) : (
@@ -181,7 +198,7 @@ function ShopRow({ item, expanded, onExpand }: { item: ShoppingItem; expanded: b
               </ul>
               <button
                 className="btn small"
-                onClick={() => item.ingredientId && dispatch({ type: 'setPantryItem', item: { ingredientId: item.ingredientId, qty: null, unit: item.unit } })}
+                onClick={always}
               >
                 J’en ai toujours (placard)
               </button>
