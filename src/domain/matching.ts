@@ -31,12 +31,27 @@ function tokenMatch(a: string, b: string): boolean {
   return short.length >= 3 && short.length / long.length >= 0.5 && long.startsWith(short);
 }
 
+/** Égalité stricte au pluriel près (« pâtes » = « pâte », « poireaux » = « poireau »). */
+function strictMatch(a: string, b: string): boolean {
+  const sing = (w: string) => w.replace(/(aux|eaux)$/, (m) => (m === 'eaux' ? 'eau' : 'al')).replace(/[sx]$/, '');
+  return a === b || sing(a) === sing(b);
+}
+
+export interface MatchOptions {
+  /** Mots entiers uniquement (noms de produits complets, pas d'abréviations de ticket). */
+  strict?: boolean;
+  /** Le premier mot significatif du libellé (le produit lui-même) doit faire partie de l'expression. */
+  head?: boolean;
+}
+
 /** Score d'une expression de référence dans un texte : 1 si tous ses mots y sont. */
-function phraseScore(textTokens: string[], phrase: string): number {
+function phraseScore(textTokens: string[], phrase: string, opts: MatchOptions = {}): number {
   const pt = tokens(phrase);
   if (pt.length === 0) return 0;
+  const eq = opts.strict ? strictMatch : tokenMatch;
+  if (opts.head && textTokens.length && !pt.some((p) => eq(textTokens[0], p))) return 0;
   let matched = 0;
-  for (const p of pt) if (textTokens.some((t) => tokenMatch(t, p))) matched++;
+  for (const p of pt) if (textTokens.some((t) => eq(t, p))) matched++;
   if (matched < pt.length) return matched / pt.length / 2; // correspondance partielle fortement pénalisée
   // Bonus aux expressions précises (« pomme de terre » l'emporte sur « pomme »).
   return 1 + Math.min(pt.length - 1, 3) * 0.15;
@@ -56,7 +71,7 @@ export interface MatchCandidate {
  * Propose les ingrédients les plus probables pour un libellé (ticket, fiche produit).
  * Les correspondances apprises (`aliases`) sont prioritaires.
  */
-export function matchIngredient(text: string, catalog: Catalog, aliases: Record<string, string> = {}, limit = 3): MatchCandidate[] {
+export function matchIngredient(text: string, catalog: Catalog, aliases: Record<string, string> = {}, limit = 3, opts: MatchOptions = {}): MatchCandidate[] {
   const norm = normalizeText(text);
   const learned = aliases[norm];
   if (learned && catalog.ingredients[learned]) return [{ ingredientId: learned, score: 10 }];
@@ -66,7 +81,7 @@ export function matchIngredient(text: string, catalog: Catalog, aliases: Record<
   for (const ing of Object.values(catalog.ingredients)) {
     const phrases = [ing.name, ...(FOOD_INFO[ing.id]?.kw ?? [])];
     let best = 0;
-    for (const p of phrases) best = Math.max(best, phraseScore(tt, p));
+    for (const p of phrases) best = Math.max(best, phraseScore(tt, p, opts));
     if (learned === ing.id) best = 10;
     if (best >= 0.5) results.push({ ingredientId: ing.id, score: best });
   }
@@ -74,7 +89,7 @@ export function matchIngredient(text: string, catalog: Catalog, aliases: Record<
 }
 
 /** Meilleure correspondance jugée fiable (toute l'expression retrouvée), sinon null. */
-export function bestMatch(text: string, catalog: Catalog, aliases: Record<string, string> = {}): string | null {
-  const [first] = matchIngredient(text, catalog, aliases, 1);
+export function bestMatch(text: string, catalog: Catalog, aliases: Record<string, string> = {}, opts: MatchOptions = {}): string | null {
+  const [first] = matchIngredient(text, catalog, aliases, 1, opts);
   return first && first.score >= 1 ? first.ingredientId : null;
 }

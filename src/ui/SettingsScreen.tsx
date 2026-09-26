@@ -9,7 +9,7 @@ import { formatAmount } from '../domain/units';
 import { DAYS, DAY_LABELS, PROFILE_IDS } from '../domain/week';
 import { exportJson, parseImport } from '../state/persistence';
 import { useStore } from '../state/store';
-import { parsePriceCsv } from '../domain/priceImport';
+import { importStoreCatalog, isStoreCatalogCsv, parsePriceCsv, type CatalogImportResult } from '../domain/priceImport';
 import { EquipmentCard } from './EquipmentScreen';
 import { todayIso } from '../domain/inventory';
 import { INSEE_SOURCE, REFERENCE_PRICES } from '../data/referencePrices';
@@ -403,7 +403,18 @@ function PricesCard() {
   const sorted = [...state.prices].sort((a, b) => b.date.localeCompare(a.date));
   const shown = showAll ? sorted : sorted.slice(0, 15);
 
+  const [catalogReport, setCatalogReport] = useState<CatalogImportResult | null>(null);
   const runImport = (csv: string) => {
+    if (isStoreCatalogCsv(csv)) {
+      const r = importStoreCatalog(csv, CATALOG, state.aliases, store, todayIso());
+      dispatch({ type: 'replaceCatalogPrices', store, entries: r.entries });
+      setCatalogReport(r);
+      setReport([
+        `Catalogue ${STORE_LABELS[store]} : ${r.rows} produits lus, ${r.foodRows} alimentaires, ${r.matchedRows} rattachés à ${r.entries.length} ingrédients (prix médian par kg / litre / pièce). L’import précédent de ce magasin est remplacé.`,
+      ]);
+      return;
+    }
+    setCatalogReport(null);
     const { entries, errors } = parsePriceCsv(csv, CATALOG, state.aliases, store, todayIso());
     if (entries.length) dispatch({ type: 'addPrices', entries });
     setReport([`${entries.length} prix importé(s).`, ...errors.slice(0, 8), ...(errors.length > 8 ? [`… et ${errors.length - 8} autre(s) ligne(s) ignorée(s).`] : [])]);
@@ -443,7 +454,7 @@ function PricesCard() {
       )}
       <div className="field">
         <span>Importer des relevés (CSV ou copier-coller)</span>
-        <p className="muted small">Une ligne par prix : produit ; prix ; quantité ; unité ; magasin ; date — ex. « Filets de poulet;11,90;1;kg;Leclerc;2026-09-26 ». Seuls produit et prix sont obligatoires.</p>
+        <p className="muted small">Une ligne par prix : produit ; prix ; quantité ; unité ; magasin ; date — ex. « Filets de poulet;11,90;1;kg;Leclerc;2026-09-26 ». Seuls produit et prix sont obligatoires. Un export de catalogue magasin (colonnes category, brand, name, size, price…) est aussi reconnu : choisissez d’abord le magasin.</p>
         <textarea rows={4} value={text} placeholder={'Courgettes;2,49;1;kg\nLait demi-écrémé;1,05;1;l;Auchan'} onChange={(e) => setText(e.target.value)} />
         <div className="row gap wrap">
           <select value={store} onChange={(e) => setStore(e.target.value as StoreId)} aria-label="Magasin par défaut">
@@ -477,6 +488,31 @@ function PricesCard() {
               <li key={i}>{r}</li>
             ))}
           </ul>
+        )}
+        {catalogReport && (
+          <details className="small">
+            <summary>Détail par ingrédient ({catalogReport.summary.length})</summary>
+            <table className="qty-table">
+              <thead>
+                <tr>
+                  <th>Ingrédient</th>
+                  <th>Prix médian</th>
+                  <th>Produits</th>
+                </tr>
+              </thead>
+              <tbody>
+                {catalogReport.summary.map((s) => (
+                  <tr key={s.ingredientId} title={s.examples.join(' · ')}>
+                    <td>{CATALOG.ingredients[s.ingredientId].name}</td>
+                    <td>
+                      {formatEuro(s.price)} / {s.perUnit === 'pc' ? 'pièce' : s.perUnit}
+                    </td>
+                    <td>{s.products}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </details>
         )}
       </div>
     </section>

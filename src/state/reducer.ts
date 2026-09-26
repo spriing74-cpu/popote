@@ -11,6 +11,7 @@ import type {
   Profile,
   ProfileId,
   Settings,
+  StoreId,
   Slot,
   SlotId,
   WeekPlan,
@@ -44,6 +45,8 @@ export type Action =
   | { type: 'clearChecked' }
   | { type: 'addPrice'; entry: PriceEntry }
   | { type: 'addPrices'; entries: PriceEntry[] }
+  /** Remplace le précédent import de catalogue du même magasin (identifiants « cat-<magasin>-… »). */
+  | { type: 'replaceCatalogPrices'; store: StoreId; entries: PriceEntry[] }
   | { type: 'removePrice'; id: string }
   | { type: 'toggleFavorite'; recipeId: string }
   | { type: 'addInventory'; items: InventoryItem[] }
@@ -167,6 +170,10 @@ export function reducer(baseCatalog: Catalog) {
         return { ...state, prices: [...state.prices, action.entry] };
       case 'addPrices':
         return { ...state, prices: [...state.prices, ...action.entries] };
+      case 'replaceCatalogPrices': {
+        const prefix = `cat-${action.store}-`;
+        return { ...state, prices: [...state.prices.filter((p) => !p.id.startsWith(prefix)), ...action.entries] };
+      }
       case 'removePrice':
         return { ...state, prices: state.prices.filter((p) => p.id !== action.id) };
       case 'toggleFavorite':

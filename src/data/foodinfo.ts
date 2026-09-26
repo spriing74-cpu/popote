@@ -90,7 +90,7 @@ export const FOOD_INFO: Record<string, FoodInfo> = {
   // Épicerie salée
   pates_courtes: F('feculent', 'placard', 365, ['penne', 'fusilli', 'coquillettes', 'macaroni', 'farfalle', 'torsades', 'pates']),
   spaghetti: F('feculent', 'placard', 365, ['spaghetti', 'spaghettis', 'tagliatelle', 'linguine']),
-  lasagnes: F('feculent', 'placard', 365, ['lasagnes', 'lasagne']),
+  lasagnes: F('feculent', 'placard', 365, ['lasagnes', 'lasagne', 'pate a lasagnes', 'feuilles de lasagnes']),
   riz: F('feculent', 'placard', 365, ['riz', 'riz basmati', 'riz long', 'riz thai', 'basmati']),
   semoule: F('feculent', 'placard', 365, ['semoule', 'couscous']),
   quinoa: F('feculent', 'placard', 365, ['quinoa']),

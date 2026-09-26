@@ -97,7 +97,7 @@ export function guessIngredient(p: OffProduct, catalog: Catalog, aliases: Record
     if (cats.some((c) => exact.test(c)) && catalog.ingredients[id]) return id;
   }
   const name = [p.product_name_fr, p.product_name, p.generic_name_fr].filter(Boolean).join(' ');
-  return name ? bestMatch(name, catalog, aliases) : null;
+  return name ? bestMatch(name, catalog, aliases, { strict: true, head: true }) : null;
 }
 
 export function toProductInfo(barcode: string, p: OffProduct, catalog: Catalog, aliases: Record<string, string> = {}): ProductInfo {
