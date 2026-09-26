@@ -10,6 +10,7 @@ import { DAYS, DAY_LABELS, PROFILE_IDS } from '../domain/week';
 import { exportJson, parseImport } from '../state/persistence';
 import { useStore } from '../state/store';
 import { parsePriceCsv } from '../domain/priceImport';
+import { EquipmentCard } from './EquipmentScreen';
 import { todayIso } from '../domain/inventory';
 import { INSEE_SOURCE, REFERENCE_PRICES } from '../data/referencePrices';
 import { Chip, Stepper, Toggle, portionLabel } from './common';
@@ -207,6 +208,8 @@ export function SettingsScreen() {
           Oublier les libellés appris
         </button>
       </section>
+
+      <EquipmentCard />
 
       <PricesCard />
 

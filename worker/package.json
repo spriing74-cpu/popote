@@ -1,0 +1,21 @@
+{
+  "name": "popote-ia",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Service IA personnel de Popote (Cloudflare Worker) : reconnaissance d'appareils et recherche de réglages",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.128.0",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260926.1",
+    "typescript": "^7.0.2",
+    "wrangler": "^4.141.0"
+  }
+}

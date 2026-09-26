@@ -21,6 +21,7 @@ import { defaultState } from '../data/defaults';
 import { mergeCatalog } from '../data/catalog';
 import { consume } from '../domain/inventory';
 import type { ConsumptionLine } from '../domain/portions';
+import type { Equipment } from '../domain/equipment';
 
 export type Action =
   | { type: 'setRecipe'; slot: SlotId; recipeId: string | null }
@@ -54,6 +55,8 @@ export type Action =
   | { type: 'clearAliases' }
   | { type: 'keepRecipe'; recipe: Recipe }
   | { type: 'removeCustomRecipe'; id: string }
+  | { type: 'saveEquipment'; equipment: Equipment }
+  | { type: 'removeEquipment'; id: string }
   | { type: 'replaceState'; state: AppState }
   | { type: 'reset' };
 
@@ -200,6 +203,15 @@ export function reducer(baseCatalog: Catalog) {
         if (inUse) return state;
         return { ...state, customRecipes: state.customRecipes.filter((r) => r.id !== action.id), favorites: state.favorites.filter((f) => f !== action.id) };
       }
+      case 'saveEquipment':
+        return {
+          ...state,
+          equipment: state.equipment.some((e) => e.id === action.equipment.id)
+            ? state.equipment.map((e) => (e.id === action.equipment.id ? action.equipment : e))
+            : [...state.equipment, action.equipment],
+        };
+      case 'removeEquipment':
+        return { ...state, equipment: state.equipment.filter((e) => e.id !== action.id) };
       case 'replaceState':
         return action.state;
       case 'reset':

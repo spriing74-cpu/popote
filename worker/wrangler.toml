@@ -1,0 +1,10 @@
+name = "popote-ia"
+main = "src/index.ts"
+compatibility_date = "2026-09-01"
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+# Adresse de l'application autorisée à appeler ce service (séparer par des virgules si plusieurs).
+ALLOWED_ORIGINS = "https://spriing74-cpu.github.io"
+
+# La clé API ne va JAMAIS ici : `npx wrangler secret put ANTHROPIC_API_KEY`

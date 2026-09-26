@@ -1,3 +1,4 @@
+import type { Equipment } from './equipment';
 // Modèle de données de Popote. Aucune logique ici : uniquement des types.
 
 export type Unit = 'g' | 'kg' | 'ml' | 'cl' | 'l' | 'cc' | 'cs' | 'pc';
@@ -239,6 +240,8 @@ export interface Settings {
   useLeftoversInSuggestions: boolean;
   /** Déduire le stock du frigo (non périmé) de la liste de courses. */
   deductInventory: boolean;
+  /** Adresse du service IA personnel (Cloudflare Worker) ; vide = IA désactivée. */
+  aiServiceUrl: string;
 }
 
 export interface AppState {
@@ -260,6 +263,8 @@ export interface AppState {
   aliases: Record<string, string>;
   /** Recettes vide-frigo gardées par l'utilisateur. */
   customRecipes: Recipe[];
+  /** Équipements de la cuisine (four, airfryer…). */
+  equipment: Equipment[];
 }
 
 // ---------- Stock (frigo) ----------

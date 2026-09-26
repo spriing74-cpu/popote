@@ -6,7 +6,7 @@ PWA en français pour planifier les repas du **samedi au mercredi** (midi et soi
 
 ```bash
 npm install
-npm test            # 50 tests : portions, absents, agrégation, unités, restes, conservation, import/export, tickets, dates, codes-barres, stock, vide-frigo
+npm test            # 69 tests : portions, restes, courses, unités, conservation, sauvegarde, tickets, dates, codes-barres, stock, vide-frigo, prix, import TheMealDB, équipements
 npm run dev         # http://localhost:5173 (sans service worker)
 npm run build       # contrôle des types + build de production dans dist/
 npm run preview     # http://localhost:4173 (avec service worker, pour tester le hors-ligne)
@@ -68,6 +68,7 @@ Les dépendances vont de l'interface vers le domaine, jamais l'inverse. La liste
 
 - **Planning** : 5 jours × midi/soir. « Compléter les cases vides », « Tout reproposer » ou « Nouvelle semaine ». Un appui sur un repas ouvre l'éditeur : recette ou restes d'un repas antérieur ; présence, portion (×0,5 à ×2), accompagnement et compléments de chaque personne ; jour de préparation ; portions en plus ; réservation de restes pour des repas ultérieurs. L'onglet **Préparation (batch)** liste, par session, les quantités totales à cuisiner et les alertes de conservation.
 - **Frigo** : stock trié par urgence (date dépassée, 2 jours, semaine, plus tard). Trois façons d'ajouter : **codes-barres** en série (caméra en direct en HTTPS, sinon photo ou saisie des chiffres), **ticket de caisse** (photo(s), lecture sur l'appareil, validation ligne par ligne, abréviations apprises), **à la main**. Pour chaque produit, la date limite peut être **lue sur l'emballage** (photo) ou estimée. L'onglet **Idées anti-gaspi** propose des recettes vide-frigo générées hors ligne (omelette, poêlée, gratin, soupe, quiche, salade, pâtes) avec ce qui périme en premier, et les recettes du catalogue qui utilisent le stock. Une idée « gardée » se planifie comme une recette normale.
+- **Ma cuisine** (Réglages) : déclarez four, airfryer, micro-ondes, plaques, autocuiseur. Chaque recette affiche « Avec votre équipement » : chaleur tournante −20 °C, airfryer (température, durée −20 %, fournées selon le panier), temps de réchauffage selon les watts, durée sous pression. La référence se lit sur la plaque signalétique (photo, sans IA). Avec le **service IA personnel** (dossier `worker/`, guide dans `worker/README.md`), l’app peut aussi reconnaître l’appareil sur photo et chercher sa notice sur le web pour en tirer les réglages du fabricant, avec leurs sources.
 - **Recettes** : recherche par nom ou par ingrédient, filtres (déjeuner froid/chantier, dîner, ≤ 20 min, économique, restes, sans viande, favoris). La fiche donne les quantités **par profil**, les étapes, les temps, la conservation, le transport et les allergènes.
 - **Courses** : liste par rayon, cases persistantes, détail des sources, « J'en ai déjà », saisie de prix, articles manuels, section placard, budget, comparaison de magasins (uniquement si vous avez saisi des prix pour au moins deux magasins).
 - **Paramètres** : valeurs supposées, profils (facteurs par type d'aliment, lieu du déjeuner, micro-ondes, compléments par défaut), repères nutritionnels, jours de préparation, limites, exclusions, placard, prix, conseils de conservation, export/import/réinitialisation.

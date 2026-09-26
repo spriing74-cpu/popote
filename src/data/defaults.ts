@@ -50,6 +50,7 @@ export function defaultSettings(): Settings {
     preferredStore: null,
     useLeftoversInSuggestions: true,
     deductInventory: true,
+    aiServiceUrl: '',
   };
 }
 
@@ -76,5 +77,6 @@ export function defaultState(): AppState {
     products: {},
     aliases: {},
     customRecipes: [],
+    equipment: [],
   };
 }

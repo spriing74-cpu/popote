@@ -1,5 +1,6 @@
 import type { AppState, Catalog, DinerChoice, InventoryItem, ProductInfo, ProfileId, Recipe, RecipeIngredient, Settings, Slot, SlotId, Unit } from '../domain/types';
 import { mergeCatalog } from '../data/catalog';
+import type { Equipment } from '../domain/equipment';
 import { DAYS, PROFILE_IDS, SLOT_IDS, emptySlot, slotIndex } from '../domain/week';
 import { defaultState } from '../data/defaults';
 
@@ -16,6 +17,49 @@ const isStr = (x: unknown): x is string => typeof x === 'string';
  * Transforme n'importe quelle donnée (localStorage ou fichier importé) en état valide :
  * champs manquants complétés par les valeurs par défaut, références inconnues retirées.
  */
+const KINDS = ['four', 'airfryer', 'microondes', 'plaques', 'autocuiseur', 'robot', 'autre'];
+const numOrNull = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? v : null);
+
+function normalizeEquipment(e: Loose): Equipment | null {
+  if (typeof e.kind !== 'string' || !KINDS.includes(e.kind)) return null;
+  const ai = isObj(e.ai) ? e.ai : null;
+  return {
+    id: str(e.id, Math.random().toString(36).slice(2)),
+    kind: e.kind as Equipment['kind'],
+    brand: str(e.brand, ''),
+    model: str(e.model, ''),
+    convection: typeof e.convection === 'boolean' ? e.convection : undefined,
+    maxTempC: numOrNull(e.maxTempC),
+    basketLiters: numOrNull(e.basketLiters),
+    watts: numOrNull(e.watts),
+    hob: e.hob === 'induction' || e.hob === 'vitroceramique' || e.hob === 'gaz' || e.hob === 'electrique' ? e.hob : undefined,
+    notes: str(e.notes, ''),
+    ai: ai
+      ? {
+          summary: str(ai.summary, ''),
+          functions: arr(ai.functions, isStr),
+          maxTempC: numOrNull(ai.maxTempC),
+          capacity: typeof ai.capacity === 'string' ? ai.capacity : null,
+          dishSettings: Array.isArray(ai.dishSettings)
+            ? ai.dishSettings.filter(isObj).map((d) => ({
+                dish: str(d.dish, ''),
+                mode: str(d.mode, ''),
+                tempC: numOrNull(d.tempC),
+                timeMin: typeof d.timeMin === 'string' ? d.timeMin : null,
+                notes: str(d.notes, ''),
+              }))
+            : [],
+          tips: arr(ai.tips, isStr),
+          sources: Array.isArray(ai.sources)
+            ? ai.sources.filter(isObj).filter((s) => typeof s.url === 'string' && /^https?:\/\//.test(s.url)).map((s) => ({ title: str(s.title, str(s.url, '')), url: s.url as string }))
+            : [],
+          caveats: str(ai.caveats, ''),
+          fetchedAt: str(ai.fetchedAt, ''),
+        }
+      : undefined,
+  };
+}
+
 const UNITS: Unit[] = ['g', 'kg', 'ml', 'cl', 'l', 'cc', 'cs', 'pc'];
 const isUnit = (u: unknown): u is Unit => typeof u === 'string' && (UNITS as string[]).includes(u);
 const isIsoDate = (d: unknown): d is string => typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d);
@@ -108,6 +152,7 @@ export function normalizeState(raw: unknown, baseCatalog: Catalog): AppState {
         : null,
     useLeftoversInSuggestions: typeof s.useLeftoversInSuggestions === 'boolean' ? s.useLeftoversInSuggestions : true,
     deductInventory: typeof s.deductInventory === 'boolean' ? s.deductInventory : true,
+    aiServiceUrl: typeof s.aiServiceUrl === 'string' && /^https:\/\//.test(s.aiServiceUrl) ? s.aiServiceUrl : '',
   };
   if (!isObj(raw.settings) || !Array.isArray(s.prepDays)) settings.prepDays = base.settings.prepDays;
 
@@ -248,6 +293,7 @@ export function normalizeState(raw: unknown, baseCatalog: Catalog): AppState {
       ? Object.fromEntries(Object.entries(raw.aliases).filter((e): e is [string, string] => typeof e[1] === 'string' && !!catalog.ingredients[e[1]]))
       : {},
     customRecipes,
+    equipment: Array.isArray(raw.equipment) ? raw.equipment.filter(isObj).map(normalizeEquipment).filter((e): e is Equipment => e !== null) : [],
   };
 }
 

@@ -8,6 +8,7 @@ import { formatQty, toIngredientUnit } from '../domain/units';
 import { PROFILE_IDS, SLOT_IDS, effectiveRecipeId, slotLabel } from '../domain/week';
 import { useCatalog, useStore } from '../state/store';
 import { COST_LABEL } from './common';
+import { adviceFor } from '../domain/equipment';
 
 function fmt(ri: RecipeIngredient, qty: number): string {
   const ing = INGREDIENTS[ri.ingredientId];
@@ -34,6 +35,7 @@ export function RecipeDetail({
   const [added, setAdded] = useState<string | null>(null);
   if (!recipe) return <p>Recette introuvable.</p>;
   const allergens = recipeAllergens(recipe);
+  const advice = adviceFor(recipe, state.equipment, 2);
   const fav = state.favorites.includes(recipe.id);
   const qtyFor = (ri: RecipeIngredient, p: ProfileId) => scaledQty(ri, state.profiles[p].factors, 1);
 
@@ -105,6 +107,25 @@ export function RecipeDetail({
           <strong>Accompagnements conseillés :</strong> {recipe.suggestedSides.map((s) => catalog.sides[s].name).join(', ')}.
           <span className="muted"> Chacun peut choisir le sien dans le planning.</span>
         </p>
+      )}
+
+      {advice.length > 0 && (
+        <div className="card">
+          <h3>Avec votre équipement</h3>
+          {advice.map((a) => (
+            <div key={a.equipmentId}>
+              <p className="small">
+                <strong>{a.title}</strong>
+              </p>
+              <ul className="plain small">
+                {a.lines.map((l, i) => (
+                  <li key={i}>• {l}</li>
+                ))}
+              </ul>
+            </div>
+          ))}
+          <p className="muted small">Équivalences indicatives : la notice de l’appareil prime.</p>
+        </div>
       )}
 
       <h3>Étapes</h3>
