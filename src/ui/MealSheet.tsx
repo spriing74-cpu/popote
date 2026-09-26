@@ -3,9 +3,10 @@ import type { SlotId } from '../domain/types';
 import { checkFreshness } from '../domain/freshness';
 import { effectiveRecipeId, leftoverTargets, presentProfiles, slotLabel } from '../domain/week';
 import { useCatalog, useStore } from '../state/store';
-import { CATEGORY_EMOJI, FreshnessBadge, Sheet } from './common';
+import { FreshnessBadge, Sheet } from './common';
 import { Icon } from './icons';
 import { RecipeDetail } from './RecipeDetail';
+import { RecipeArt } from './RecipeTiles';
 import { RecipesScreen } from './RecipesScreen';
 import { SlotEditor } from './SlotEditor';
 
@@ -55,9 +56,7 @@ export function MealSheet({ id, onClose, startPicking }: { id: SlotId; onClose: 
         <>
           <section className="meal-hero">
             <div className="hero-top">
-              <span className="hero-emoji" aria-hidden>
-                {CATEGORY_EMOJI[recipe.category] ?? '🍽️'}
-              </span>
+              <RecipeArt recipe={recipe} />
               <div>
                 <p className="label">{label}</p>
                 <h2>{recipe.name}</h2>

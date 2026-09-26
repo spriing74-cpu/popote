@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import type { FreshnessCheck } from '../domain/freshness';
 import { Icon, type IconName } from './icons';
 import { haptic } from './ios';
@@ -54,11 +55,14 @@ export function Sheet({ title, onClose, children, actions }: { title: string; on
 
   // Balayage depuis le bord gauche.
   const g = useRef<{ id: number; x0: number; y0: number; t0: number; lock: boolean | null } | null>(null);
+  // Chaque écran gère ses propres gestes : rien ne remonte vers l'écran du dessous.
   const onPointerDown = (e: React.PointerEvent) => {
+    e.stopPropagation();
     if (e.clientX > 28 || leaving) return;
     g.current = { id: e.pointerId, x0: e.clientX, y0: e.clientY, t0: e.timeStamp, lock: null };
   };
   const onPointerMove = (e: React.PointerEvent) => {
+    e.stopPropagation();
     const s = g.current;
     if (!s || s.id !== e.pointerId) return;
     const mx = e.clientX - s.x0;
@@ -76,6 +80,7 @@ export function Sheet({ title, onClose, children, actions }: { title: string; on
     setDx(Math.max(0, mx));
   };
   const onPointerUp = (e: React.PointerEvent) => {
+    e.stopPropagation();
     const s = g.current;
     g.current = null;
     if (!s || !s.lock) return;
@@ -92,7 +97,9 @@ export function Sheet({ title, onClose, children, actions }: { title: string; on
     ? { transform: 'translate3d(100%,0,0)', transition: 'transform 0.26s cubic-bezier(0.4, 0, 1, 1)' }
     : { transform: `translate3d(${dx}px,0,0)`, transition: dragging ? 'none' : 'transform 0.3s cubic-bezier(0.2, 0.9, 0.3, 1)' };
 
-  return (
+  // Rendu à la racine de la page : un écran ouvert depuis une carte « verre » (backdrop-filter)
+  // ou depuis un autre écran resterait sinon enfermé dans cette carte.
+  return createPortal(
     <>
       <div className="sheet-dim" style={{ opacity: leaving ? 0 : 1 - dx / (ref.current?.offsetWidth ?? 375) }} aria-hidden />
       <div
@@ -105,11 +112,13 @@ export function Sheet({ title, onClose, children, actions }: { title: string; on
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
-        onPointerCancel={() => {
+        onPointerCancel={(e) => {
+          e.stopPropagation();
           g.current = null;
           setDragging(false);
           setDx(0);
         }}
+        onClick={(e) => e.stopPropagation()}
       >
         <header className="sheet-header">
           <button className="icon-btn" onClick={() => requestClose()} aria-label="Retour">
@@ -120,7 +129,8 @@ export function Sheet({ title, onClose, children, actions }: { title: string; on
         </header>
         <div className="sheet-body">{children}</div>
       </div>
-    </>
+    </>,
+    document.body,
   );
 }
 
@@ -293,6 +303,19 @@ export function uid(): string {
   return Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
 }
 export const COST_LABEL = { 1: '€', 2: '€€', 3: '€€€' } as const;
+
+/** Identité visuelle des familles de plats : libellé, emoji et dégradé (les recettes maison n'ont pas de photo). */
+export const CATEGORY_STYLE: Record<string, { label: string; emoji: string; from: string; to: string }> = {
+  familial: { label: 'Plats familiaux', emoji: '🍲', from: '#ffb37a', to: '#ff7a59' },
+  mijote: { label: 'Mijotés', emoji: '🥘', from: '#e9a07a', to: '#b8573c' },
+  pates_riz: { label: 'Pâtes et riz', emoji: '🍝', from: '#ffd36e', to: '#f39c3d' },
+  four: { label: 'Au four', emoji: '🔥', from: '#ff9a8b', to: '#e2574c' },
+  quiche_tarte: { label: 'Quiches et tartes', emoji: '🥧', from: '#f7d794', to: '#e0a85a' },
+  bowl_salade: { label: 'Bowls et salades', emoji: '🥗', from: '#a8e6a1', to: '#4fb286' },
+  wrap_sandwich: { label: 'Wraps et sandwichs', emoji: '🌯', from: '#ffe29a', to: '#f2b35b' },
+  monde: { label: 'Cuisines du monde', emoji: '🌶️', from: '#ff9fb2', to: '#c8456b' },
+};
+export const categoryStyle = (c: string) => CATEGORY_STYLE[c] ?? { label: 'Recette', emoji: '🍽️', from: '#c9d6ff', to: '#8aa2e8' };
 
 /** Pastille visuelle d'une recette (pas de photo pour les recettes maison). */
 export const CATEGORY_EMOJI: Record<string, string> = {

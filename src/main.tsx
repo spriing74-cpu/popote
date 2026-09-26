@@ -4,6 +4,7 @@ import { registerSW } from 'virtual:pwa-register';
 import { StoreProvider } from './state/store';
 import { App } from './App';
 import { DialogProvider } from './ui/dialog';
+import { TimersProvider } from './ui/timers';
 // Police « matrice de points » du thème Nothing (auto-hébergée, disponible hors ligne).
 import '@fontsource/doto/latin-900.css';
 // Polices du thème Liquid Glass : Geist (texte) et Instrument Serif (titres).
@@ -25,7 +26,9 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <StoreProvider>
       <DialogProvider>
-        <App />
+        <TimersProvider>
+          <App />
+        </TimersProvider>
       </DialogProvider>
     </StoreProvider>
   </StrictMode>,

@@ -1,16 +1,25 @@
-import { useState } from 'react';
-import type { ProfileId, Recipe, RecipeIngredient, SlotId } from '../domain/types';
+import { useMemo, useState } from 'react';
+import type { Recipe } from '../domain/types';
 import { recipeAllergens } from '../data/catalog';
 import { ALLERGEN_LABELS } from '../data/aisles';
-import { scaledQty } from '../domain/portions';
 import { formatQty, toIngredientUnit } from '../domain/units';
-import { PROFILE_IDS, effectiveRecipeId, slotIds, slotLabel } from '../domain/week';
+import { PROFILE_IDS } from '../domain/week';
+import { todayIso } from '../domain/inventory';
 import { useCatalog, useStore } from '../state/store';
-import { CATEGORY_EMOJI, COST_LABEL, nfr } from './common';
+import { COST_LABEL, Segmented, Stepper, categoryStyle, nfr, uid } from './common';
 import { Icon } from './icons';
-import { haptic, useWakeLock } from './ios';
+import { haptic } from './ios';
 import { adviceFor } from '../domain/equipment';
 import { NUTRITION_SOURCE, portionNutrition } from '../domain/nutrition';
+import { ingredientStock, servingQty, similarRecipes, stepTimers, type Servings, type StockState } from '../domain/recipeTools';
+import { RecipeTile } from './RecipeTiles';
+import { AddToWeek } from './AddToWeek';
+import { CookMode } from './CookMode';
+import { useTimers } from './timers';
+
+type Tab = 'ingredients' | 'etapes' | 'infos';
+
+const STOCK_LABEL: Record<StockState, string> = { frigo: 'au frigo', placard: 'placard', manque: '' };
 
 export function RecipeDetail({
   recipeId,
@@ -18,6 +27,7 @@ export function RecipeDetail({
   onPick,
   hidePlanning,
   hideTitle,
+  onOpenRecipe,
 }: {
   recipeId?: string;
   /** Recette non enregistrée (idée vide-frigo) à afficher. */
@@ -26,257 +36,354 @@ export function RecipeDetail({
   hidePlanning?: boolean;
   /** Le titre est déjà affiché au-dessus (fiche repas). */
   hideTitle?: boolean;
+  /** Ouvre une autre recette (« Dans le même esprit »). */
+  onOpenRecipe?: (id: string) => void;
 }) {
   const { state, dispatch } = useStore();
   const catalog = useCatalog();
+  const timers = useTimers();
   const recipe = given ?? (recipeId ? catalog.recipes[recipeId] : undefined);
-  const [target, setTarget] = useState<SlotId | ''>('');
-  const [added, setAdded] = useState<string | null>(null);
-  const [awake, setAwake] = useState(false);
-  const wakeSupported = useWakeLock(awake);
+  const [tab, setTab] = useState<Tab>('ingredients');
+  const [servings, setServings] = useState<Servings>({ kind: 'foyer' });
+  const [checked, setChecked] = useState<Record<string, boolean>>({});
+  const [cooking, setCooking] = useState(false);
+  const [adding, setAdding] = useState(false);
+  const [addedToList, setAddedToList] = useState<number | null>(null);
+  const today = todayIso();
+  const similar = useMemo(() => (recipe && onOpenRecipe ? similarRecipes(recipe, catalog) : []), [recipe, onOpenRecipe, catalog]);
   if (!recipe) return <p>Recette introuvable.</p>;
-  const allergens = recipeAllergens(recipe);
-  const advice = adviceFor(recipe, state.equipment, 2);
+
+  const st = categoryStyle(recipe.category);
   const fav = state.favorites.includes(recipe.id);
   const rating = state.ratings[recipe.id];
   const inCatalog = !!catalog.recipes[recipe.id];
-  const qtyFor = (ri: RecipeIngredient, p: ProfileId) => scaledQty(ri, state.profiles[p].factors, 1);
-  const fmt = (ri: RecipeIngredient, qty: number) => {
+  const allergens = recipeAllergens(recipe);
+  const advice = adviceFor(recipe, state.equipment, 2);
+
+  const lines = recipe.ingredients.map((ri) => {
     const ing = catalog.ingredients[ri.ingredientId];
-    const v = toIngredientUnit(qty, ri.unit, ing);
-    return v === null ? `${qty} ${ri.unit}` : formatQty(v, ing.unit, ing.pieceLabel);
+    const qty = servingQty(ri, servings, state.profiles);
+    const base = toIngredientUnit(qty, ri.unit, ing);
+    return {
+      ri,
+      ing,
+      qty,
+      base,
+      text: base === null ? `${nfr(qty)} ${ri.unit}` : formatQty(base, ing.unit, ing.pieceLabel),
+      stock: ingredientStock(ri, qty, catalog, state.inventory, state.pantry, today),
+    };
+  });
+  const missing = lines.filter((l) => l.stock === 'manque');
+  const haveCount = lines.length - missing.length;
+
+  const addMissing = () => {
+    const existing = new Set(state.manualItems.map((m) => m.label.toLowerCase()));
+    let n = 0;
+    for (const l of missing) {
+      if (existing.has(l.ing.name.toLowerCase())) continue;
+      dispatch({ type: 'addManualItem', item: { id: uid(), label: l.ing.name, quantity: l.text, aisle: l.ing.aisle } });
+      n++;
+    }
+    haptic('medium');
+    setAddedToList(n);
   };
+
+  const toggle = (id: string) => {
+    haptic('light');
+    setChecked((c) => ({ ...c, [id]: !c[id] }));
+  };
+
   const nutrition = state.settings.showNutrition ? PROFILE_IDS.map((p) => ({ p, n: portionNutrition(recipe, state.profiles[p].factors, catalog) })) : [];
+
+  const ratingButtons = (
+    <>
+        <button className={fav ? 'icon-btn active' : 'icon-btn'} aria-pressed={fav} aria-label="Favori" onClick={() => (haptic('light'), dispatch({ type: 'toggleFavorite', recipeId: recipe.id }))}>
+          <Icon name="star" size={20} />
+        </button>
+        {inCatalog && (
+          <>
+            <button
+              className={rating === 1 ? 'icon-btn active' : 'icon-btn'}
+              aria-pressed={rating === 1}
+              aria-label="On aime"
+              onClick={() => (haptic('light'), dispatch({ type: 'rateRecipe', recipeId: recipe.id, value: rating === 1 ? 0 : 1 }))}
+            >
+              <Icon name="thumbUp" size={20} />
+            </button>
+            <button
+              className={rating === -1 ? 'icon-btn active danger' : 'icon-btn'}
+              aria-pressed={rating === -1}
+              aria-label="Plus jamais"
+              onClick={() => (haptic('light'), dispatch({ type: 'rateRecipe', recipeId: recipe.id, value: rating === -1 ? 0 : -1 }))}
+            >
+              <Icon name="thumbDown" size={20} />
+            </button>
+          </>
+        )}
+    </>
+  );
 
   return (
     <div className="recipe-detail">
       {!hideTitle && (
-        <div className="row gap align-center">
-          <span className="hero-emoji" aria-hidden>
-            {CATEGORY_EMOJI[recipe.category] ?? '🍽️'}
-          </span>
-          <h2 style={{ margin: 0 }}>{recipe.name}</h2>
-        </div>
+        <section className="recipe-hero" style={{ background: `linear-gradient(150deg, ${st.from}, ${st.to})` }}>
+          {recipe.imageUrl ? <img src={recipe.imageUrl} alt="" /> : <span className="hero-big-emoji" aria-hidden>{st.emoji}</span>}
+          <span className="hero-cat">{st.label}</span>
+          <span className="hero-rate">{ratingButtons}</span>
+        </section>
       )}
-      {recipe.imageUrl && <img className="recipe-photo" src={recipe.imageUrl} alt="" loading="lazy" />}
-      <p>{recipe.summary}</p>
+      {!hideTitle && <h2 className="recipe-title">{recipe.name}</h2>}
+      <p className="recipe-summary">{recipe.summary}</p>
 
-      <div className="stats">
-        <div className="stat">
-          <b>{recipe.activeMin} min</b>
-          <span>actives</span>
-        </div>
-        <div className="stat">
-          <b>{recipe.totalMin} min</b>
-          <span>au total</span>
-        </div>
-        <div className="stat">
-          <b>{COST_LABEL[recipe.costLevel]}</b>
-          <span>{recipe.temperature === 'froid' ? 'se mange froid' : recipe.temperature === 'chaud' ? 'se mange chaud' : 'chaud ou froid'}</span>
-        </div>
+      <div className="pill-row">
+        <span className="pill">
+          <Icon name="clock" size={14} /> {recipe.activeMin} min actives · {recipe.totalMin} min
+        </span>
+        <span className="pill">{COST_LABEL[recipe.costLevel]}</span>
+        <span className="pill">{recipe.temperature === 'froid' ? '🧊 froid' : recipe.temperature === 'chaud' ? '🔥 chaud' : 'chaud ou froid'}</span>
+        {recipe.freezable && <span className="pill">❄️ se congèle</span>}
+        {recipe.vegetarian && <span className="pill">🌱 sans viande</span>}
       </div>
 
-      <div className="chips">
-        {onPick && (
+      <div className="recipe-actions">
+        {onPick ? (
           <button className="btn primary" onClick={onPick}>
             <Icon name="check" size={18} /> Choisir ce plat
           </button>
+        ) : (
+          <button className="btn primary" onClick={() => setCooking(true)}>
+            <Icon name="play" size={16} /> Cuisiner
+          </button>
         )}
-        <button className={fav ? 'chip active' : 'chip'} onClick={() => dispatch({ type: 'toggleFavorite', recipeId: recipe.id })} aria-pressed={fav}>
-          {fav ? '★ Favori' : '☆ Favori'}
-        </button>
-        {inCatalog && (
-          <>
-            <button className={rating === 1 ? 'chip active' : 'chip'} aria-pressed={rating === 1} onClick={() => dispatch({ type: 'rateRecipe', recipeId: recipe.id, value: rating === 1 ? 0 : 1 })}>
-              👍 On aime
-            </button>
-            <button className={rating === -1 ? 'chip active' : 'chip'} aria-pressed={rating === -1} onClick={() => dispatch({ type: 'rateRecipe', recipeId: recipe.id, value: rating === -1 ? 0 : -1 })}>
-              👎 Plus jamais
-            </button>
-          </>
+        {!onPick && !hidePlanning && inCatalog && (
+          <button className="btn" onClick={() => setAdding(true)}>
+            <Icon name="calendar" size={18} /> À la semaine
+          </button>
         )}
+        {hideTitle && ratingButtons}
       </div>
 
-      <h3>Ingrédients · 1 portion chacun</h3>
-      <table className="qty-table">
-        <thead>
-          <tr>
-            <th>Ingrédient</th>
+      <Segmented
+        value={tab}
+        onChange={setTab}
+        options={[
+          { id: 'ingredients', label: 'Ingrédients' },
+          { id: 'etapes', label: 'Étapes' },
+          { id: 'infos', label: 'Infos' },
+        ]}
+      />
+
+      {tab === 'ingredients' && (
+        <section>
+          <div className="chips">
+            <button className={servings.kind === 'foyer' ? 'chip active' : 'chip'} onClick={() => setServings({ kind: 'foyer' })}>
+              Nous deux
+            </button>
             {PROFILE_IDS.map((p) => (
-              <th key={p}>{state.profiles[p].name}</th>
+              <button key={p} className={servings.kind === 'profil' && servings.id === p ? 'chip active' : 'chip'} onClick={() => setServings({ kind: 'profil', id: p })}>
+                {state.profiles[p].name}
+              </button>
             ))}
-          </tr>
-        </thead>
-        <tbody>
-          {recipe.ingredients.map((ri) => (
-            <tr key={ri.ingredientId}>
-              <td>
-                {catalog.ingredients[ri.ingredientId].name}
-                {ri.form && <span className="muted"> ({ri.form})</span>}
-              </td>
-              {PROFILE_IDS.map((p) => (
-                <td key={p}>{fmt(ri, qtyFor(ri, p))}</td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      <p className="muted small">Quantités crues, ajustées au profil de chacun (Réglages › Foyer).</p>
-
-      {recipe.suggestedSides.length > 0 && (
-        <p className="small">
-          <strong>Accompagnements conseillés :</strong> {recipe.suggestedSides.map((s) => catalog.sides[s].name).join(', ')}.
-        </p>
-      )}
-
-      {nutrition.length > 0 && (
-        <details className="fold">
-          <summary>Repères nutritionnels (indicatifs)</summary>
-          <table className="qty-table">
-            <thead>
-              <tr>
-                <th>Par portion, sans accompagnement</th>
-                {nutrition.map(({ p }) => (
-                  <th key={p}>{state.profiles[p].name}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {(
-                [
-                  ['Énergie', 'kcal', 'kcal', 0],
-                  ['Protéines', 'proteines', 'g', 0],
-                  ['Glucides', 'glucides', 'g', 0],
-                  ['Lipides', 'lipides', 'g', 0],
-                  ['Fibres', 'fibres', 'g', 0],
-                  ['Sel', 'sel', 'g', 1],
-                ] as const
-              ).map(([label, key, unit, digits]) => (
-                <tr key={key}>
-                  <td>{label}</td>
-                  {nutrition.map(({ p, n }) => (
-                    <td key={p}>
-                      ≈ {nfr(n[key], digits)} {unit}
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <p className="muted small">
-            Estimation à partir des ingrédients crus de la{' '}
-            <a href={NUTRITION_SOURCE.url} target="_blank" rel="noreferrer">
-              table Ciqual (Anses)
-            </a>
-            , hors huile de cuisson absorbée et accompagnement. Un repère, pas un objectif : les besoins dépendent de chacun.
-            {nutrition[0].n.missing.length > 0 && ` Non comptés : ${nutrition[0].n.missing.join(', ').toLowerCase()}.`}
-          </p>
-        </details>
-      )}
-
-      {advice.length > 0 && (
-        <div className="card">
-          <h3>Avec votre équipement</h3>
-          {advice.map((a) => (
-            <div key={a.equipmentId}>
-              <p className="small">
-                <strong>{a.title}</strong>
-              </p>
-              <ul className="plain small">
-                {a.lines.map((l, i) => (
-                  <li key={i}>• {l}</li>
-                ))}
-              </ul>
+            <button className={servings.kind === 'portions' ? 'chip active' : 'chip'} onClick={() => setServings({ kind: 'portions', n: servings.kind === 'portions' ? servings.n : 4 })}>
+              Portions…
+            </button>
+          </div>
+          {servings.kind === 'portions' && (
+            <div className="field-inline">
+              <span>Portions standard</span>
+              <Stepper value={servings.n} min={1} max={12} onChange={(n) => setServings({ kind: 'portions', n })} />
             </div>
-          ))}
-          <p className="muted small">Équivalences indicatives : la notice de l’appareil prime.</p>
-        </div>
+          )}
+          <p className="small muted">
+            {servings.kind === 'foyer'
+              ? 'Une portion chacun, ajustée au profil de chacun.'
+              : servings.kind === 'profil'
+                ? `Une portion ajustée au profil de ${state.profiles[servings.id].name}.`
+                : 'Portions adultes standard, sans ajustement.'}{' '}
+            Quantités crues. Touchez un ingrédient pour le cocher.
+          </p>
+
+          <div className="have-bar">
+            <div className="progress" aria-hidden>
+              <span style={{ width: `${(haveCount / Math.max(1, lines.length)) * 100}%` }} />
+            </div>
+            <span className="small">
+              <strong>{haveCount}</strong>/{lines.length} déjà à la maison
+            </span>
+          </div>
+
+          <ul className="ing-list">
+            {lines.map((l) => (
+              <li key={l.ri.ingredientId}>
+                <button className={checked[l.ri.ingredientId] ? 'ing-row done' : 'ing-row'} onClick={() => toggle(l.ri.ingredientId)} aria-pressed={!!checked[l.ri.ingredientId]}>
+                  <span className="ing-check" aria-hidden>
+                    {checked[l.ri.ingredientId] && <Icon name="check" size={14} />}
+                  </span>
+                  <span className="ing-name">
+                    {l.ing.name}
+                    {l.ri.form && <span className="muted"> · {l.ri.form}</span>}
+                    {l.stock !== 'manque' && <span className={`stock-tag ${l.stock}`}>{STOCK_LABEL[l.stock]}</span>}
+                  </span>
+                  <span className="ing-qty">{l.text}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+
+          {missing.length > 0 && inCatalog && (
+            <button className="btn block" onClick={addMissing} disabled={addedToList !== null}>
+              <Icon name="cart" size={18} />{' '}
+              {addedToList === null ? `Ajouter les ${missing.length} manquants aux courses` : addedToList ? `✓ ${addedToList} article(s) ajouté(s) aux courses` : '✓ Déjà dans les courses'}
+            </button>
+          )}
+          {recipe.suggestedSides.length > 0 && (
+            <p className="small">
+              <strong>Pour accompagner :</strong> {recipe.suggestedSides.map((s) => catalog.sides[s].name.toLowerCase()).join(', ')}.
+            </p>
+          )}
+        </section>
       )}
 
-      <div className="row space-between">
-        <h3>Étapes</h3>
-        {wakeSupported && (
-          <button
-            className={awake ? 'chip active' : 'chip'}
-            aria-pressed={awake}
-            onClick={() => {
-              haptic('light');
-              setAwake((v) => !v);
-            }}
-          >
-            <Icon name="sun" size={16} /> {awake ? 'Écran allumé' : 'Garder l’écran allumé'}
+      {tab === 'etapes' && (
+        <section>
+          <button className="btn primary block" onClick={() => setCooking(true)}>
+            <Icon name="play" size={16} /> Mode cuisine : étape par étape, écran allumé
           </button>
-        )}
-      </div>
-      <ol className="steps">
-        {recipe.steps.map((s, i) => (
-          <li key={i}>{s}</li>
-        ))}
-      </ol>
-
-      <div className="chips">
-        {recipe.videoUrl && (
-          <a className="btn primary small" href={recipe.videoUrl} target="_blank" rel="noreferrer">
-            <Icon name="play" size={16} /> Vidéo
-          </a>
-        )}
-        <a className="btn small" href={youtubeSearchUrl(recipe.name)} target="_blank" rel="noreferrer">
-          <Icon name="play" size={16} /> Vidéos YouTube
-        </a>
-        {recipe.source && (
-          <a className="btn small" href={recipe.source.url} target="_blank" rel="noreferrer">
-            <Icon name="external" size={16} /> {recipe.source.name}
-          </a>
-        )}
-      </div>
-
-      <details className="fold">
-        <summary>Conservation, transport, allergènes</summary>
-        <p className="small">
-          {recipe.storageTips}{' '}
-          <span className="muted">
-            (repère : {recipe.fridgeDays} j au réfrigérateur{recipe.freezable ? ', congelable' : ', ne se congèle pas bien'})
-          </span>
-        </p>
-        {recipe.transportTips && <p className="small">{recipe.transportTips}</p>}
-        <p className="small">
-          <strong>Allergènes :</strong> {allergens.length ? allergens.map((a) => ALLERGEN_LABELS[a]).join(', ') : 'aucun des 14 allergènes majeurs dans les ingrédients listés'}.
-          <span className="muted"> Vérifiez toujours les étiquettes.</span>
-        </p>
-      </details>
-
-      {!onPick && !hidePlanning && inCatalog && (
-        <div className="card">
-          <h3>Ajouter à la semaine</h3>
-          <select value={target} onChange={(e) => setTarget(e.target.value as SlotId)}>
-            <option value="">Choisir un repas…</option>
-            {slotIds(state.plan).map((id) => {
-              const cur = effectiveRecipeId(state.plan, id);
-              return (
-                <option key={id} value={id}>
-                  {slotLabel(state.plan, id)} {cur ? `— remplace : ${catalog.recipes[cur]?.name ?? ''}` : '— libre'}
-                </option>
-              );
-            })}
-          </select>
-          <button
-            className="btn primary block"
-            disabled={!target}
-            onClick={() => {
-              if (!target) return;
-              dispatch({ type: 'setRecipe', slot: target, recipeId: recipe.id });
-              setAdded(slotLabel(state.plan, target));
-              setTarget('');
-            }}
-          >
-            Ajouter
-          </button>
-          {added && <p className="note ok">✓ Ajouté : {added.toLowerCase()}.</p>}
-        </div>
+          <ol className="steps">
+            {recipe.steps.map((s, i) => (
+              <li key={i}>
+                {s}
+                {stepTimers(s).length > 0 && (
+                  <span className="step-timers">
+                    {stepTimers(s).map((t) => (
+                      <button key={t.minutes} className="chip" onClick={() => timers.start(`${recipe.name} · ${t.label}`, t.minutes)}>
+                        <Icon name="clock" size={14} /> {t.label}
+                      </button>
+                    ))}
+                  </span>
+                )}
+              </li>
+            ))}
+          </ol>
+          <div className="chips">
+            {recipe.videoUrl && (
+              <a className="btn small primary" href={recipe.videoUrl} target="_blank" rel="noreferrer">
+                <Icon name="play" size={16} /> Vidéo
+              </a>
+            )}
+            <a className="btn small" href={youtubeSearchUrl(recipe.name)} target="_blank" rel="noreferrer">
+              <Icon name="play" size={16} /> Vidéos YouTube
+            </a>
+            {recipe.source && (
+              <a className="btn small" href={recipe.source.url} target="_blank" rel="noreferrer">
+                <Icon name="external" size={16} /> {recipe.source.name}
+              </a>
+            )}
+          </div>
+        </section>
       )}
+
+      {tab === 'infos' && (
+        <section>
+          {advice.length > 0 && (
+            <div className="card">
+              <h3>Avec votre équipement</h3>
+              {advice.map((a) => (
+                <div key={a.equipmentId}>
+                  <p className="small">
+                    <strong>{a.title}</strong>
+                  </p>
+                  <ul className="plain small">
+                    {a.lines.map((l, i) => (
+                      <li key={i}>• {l}</li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+              <p className="muted small">Équivalences indicatives : la notice de l’appareil prime.</p>
+            </div>
+          )}
+          {nutrition.length > 0 && (
+            <div className="card">
+              <h3>Repères nutritionnels</h3>
+              <table className="qty-table">
+                <thead>
+                  <tr>
+                    <th>1 portion, sans accompagnement</th>
+                    {nutrition.map(({ p }) => (
+                      <th key={p}>{state.profiles[p].name}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {(
+                    [
+                      ['Énergie', 'kcal', 'kcal', 0],
+                      ['Protéines', 'proteines', 'g', 0],
+                      ['Glucides', 'glucides', 'g', 0],
+                      ['Lipides', 'lipides', 'g', 0],
+                      ['Fibres', 'fibres', 'g', 0],
+                      ['Sel', 'sel', 'g', 1],
+                    ] as const
+                  ).map(([label, key, unit, digits]) => (
+                    <tr key={key}>
+                      <td>{label}</td>
+                      {nutrition.map(({ p, n }) => (
+                        <td key={p}>
+                          ≈ {nfr(n[key], digits)} {unit}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <p className="muted small">
+                Estimation d’après la{' '}
+                <a href={NUTRITION_SOURCE.url} target="_blank" rel="noreferrer">
+                  table Ciqual (Anses)
+                </a>
+                , hors huile absorbée et accompagnement. Un repère, pas un objectif.
+                {nutrition[0].n.missing.length > 0 && ` Non comptés : ${nutrition[0].n.missing.join(', ').toLowerCase()}.`}
+              </p>
+            </div>
+          )}
+          <div className="card">
+            <h3>Conservation</h3>
+            <p className="small">
+              {recipe.storageTips} <span className="muted">(repère : {recipe.fridgeDays} j au réfrigérateur{recipe.freezable ? ', congelable' : ', ne se congèle pas bien'})</span>
+            </p>
+            {recipe.transportTips && (
+              <>
+                <h3>Transport</h3>
+                <p className="small">{recipe.transportTips}</p>
+              </>
+            )}
+            <h3>Allergènes</h3>
+            <p className="small">
+              {allergens.length ? allergens.map((a) => ALLERGEN_LABELS[a]).join(', ') : 'Aucun des 14 allergènes majeurs dans les ingrédients listés'}.{' '}
+              <span className="muted">Vérifiez toujours les étiquettes.</span>
+            </p>
+          </div>
+        </section>
+      )}
+
+      {similar.length > 0 && onOpenRecipe && (
+        <section className="shelf">
+          <h2 className="shelf-title">Dans le même esprit</h2>
+          <div className="shelf-row">
+            {similar.map((r) => (
+              <RecipeTile key={r.id} recipe={r} onOpen={() => onOpenRecipe(r.id)} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {cooking && <CookMode recipe={recipe} servings={servings} onClose={() => setCooking(false)} />}
+      {adding && <AddToWeek recipe={recipe} onClose={() => setAdding(false)} />}
     </div>
   );
 }
+
 
 /** Recherche YouTube de la recette : toujours valable, sans clé d'API ni lien qui pourrait disparaître. */
 export function youtubeSearchUrl(name: string): string {
