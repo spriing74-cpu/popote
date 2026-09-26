@@ -183,6 +183,10 @@ p {
   cursor: pointer;
   width: 100%;
 }
+.row > .linkish {
+  width: auto;
+  min-width: 0;
+}
 .linkish h3 {
   color: var(--primary);
   margin: 4px 0;
@@ -457,7 +461,7 @@ p {
 .slot {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 4px;
   width: 100%;
   min-height: 64px;
   border: 0;
@@ -465,7 +469,22 @@ p {
   background: none;
   text-align: left;
   padding: 10px 0;
+}
+.slot-hit {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: none;
+  text-align: left;
+  padding: 0;
   cursor: pointer;
+}
+.slot-edit {
+  flex: 0 0 auto;
+  padding-inline: 8px;
 }
 .day .slot:first-of-type {
   border-top: 0;
