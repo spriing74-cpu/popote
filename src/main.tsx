@@ -5,6 +5,13 @@ import { StoreProvider } from './state/store';
 import { App } from './App';
 // Police « matrice de points » du thème Nothing (auto-hébergée, disponible hors ligne).
 import '@fontsource/doto/latin-900.css';
+// Polices du thème Liquid Glass : Geist (texte) et Instrument Serif (titres).
+import '@fontsource/geist/latin-400.css';
+import '@fontsource/geist/latin-500.css';
+import '@fontsource/geist/latin-600.css';
+import '@fontsource/geist/latin-700.css';
+import '@fontsource/instrument-serif/latin-400.css';
+import '@fontsource/instrument-serif/latin-400-italic.css';
 import './styles.css';
 
 // Service worker : met l'application en cache pour un usage hors ligne.
