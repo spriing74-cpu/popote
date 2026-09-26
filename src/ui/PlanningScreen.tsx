@@ -23,7 +23,8 @@ import {
 import { useCatalog, useStore } from '../state/store';
 import { todayIso } from '../domain/inventory';
 import { stockEntries, stockUrgencyMap } from '../domain/antigaspi';
-import { FreshnessBadge } from './common';
+import { FreshnessBadge, Sheet } from './common';
+import { RecipeDetail } from './RecipeDetail';
 import { SlotEditor } from './SlotEditor';
 
 type View = 'repas' | 'preparation';
@@ -33,6 +34,7 @@ export function PlanningScreen({ goTo }: { goTo: (t: 'courses') => void }) {
   const catalog = useCatalog();
   const [view, setView] = useState<View>('repas');
   const [editing, setEditing] = useState<SlotId | null>(null);
+  const [viewing, setViewing] = useState<string | null>(null);
   const plan = state.plan;
   const filled = SLOT_IDS.filter((id) => effectiveRecipeId(plan, id)).length;
 
@@ -94,7 +96,15 @@ export function PlanningScreen({ goTo }: { goTo: (t: 'courses') => void }) {
               </h2>
               {MEALS.map((m) => {
                 const id = slotId(d, m);
-                return <SlotRow key={id} id={id} label={MEAL_LABELS[m]} onOpen={() => setEditing(id)} />;
+                return (
+                  <SlotRow
+                    key={id}
+                    id={id}
+                    label={MEAL_LABELS[m]}
+                    onEdit={() => setEditing(id)}
+                    onViewRecipe={setViewing}
+                  />
+                );
               })}
             </section>
           ))}
@@ -103,15 +113,20 @@ export function PlanningScreen({ goTo }: { goTo: (t: 'courses') => void }) {
           </button>
         </div>
       ) : (
-        <PrepView onOpen={setEditing} />
+        <PrepView onEdit={setEditing} onViewRecipe={setViewing} />
       )}
 
       {editing && <SlotEditor id={editing} onClose={() => setEditing(null)} />}
+      {viewing && (
+        <Sheet title="Recette" onClose={() => setViewing(null)}>
+          <RecipeDetail recipeId={viewing} hidePlanning />
+        </Sheet>
+      )}
     </div>
   );
 }
 
-function SlotRow({ id, label, onOpen }: { id: SlotId; label: string; onOpen: () => void }) {
+function SlotRow({ id, label, onEdit, onViewRecipe }: { id: SlotId; label: string; onEdit: () => void; onViewRecipe: (recipeId: string) => void }) {
   const { state } = useStore();
   const catalog = useCatalog();
   const plan = state.plan;
@@ -127,8 +142,8 @@ function SlotRow({ id, label, onOpen }: { id: SlotId; label: string; onOpen: () 
     return urgent.filter((e) => recipe.ingredients.some((i) => i.ingredientId === e.ingredientId)).map((e) => catalog.ingredients[e.ingredientId].name.toLowerCase());
   }, [recipe, slot.leftoverOf, state.inventory, catalog]);
 
-  return (
-    <button className={`slot ${recipe ? '' : 'slot-empty'}`} onClick={onOpen}>
+  const main = (
+    <>
       <span className="slot-meal">{label}</span>
       <span className="slot-main">
         <span className="slot-title">{recipe ? recipe.name : present.length === 0 ? 'Personne' : '+ Choisir un repas'}</span>
@@ -143,15 +158,36 @@ function SlotRow({ id, label, onOpen }: { id: SlotId; label: string; onOpen: () 
           {slot.note && <span className="badge">{slot.note}</span>}
         </span>
       </span>
-      <span className="chevron" aria-hidden>
-        ›
-      </span>
-    </button>
+    </>
+  );
+
+  if (!recipe || !rid) {
+    return (
+      <div className="slot slot-empty">
+        <button type="button" className="slot-hit" onClick={onEdit}>
+          {main}
+          <span className="chevron" aria-hidden>
+            ›
+          </span>
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="slot">
+      <button type="button" className="slot-hit" onClick={() => onViewRecipe(rid)}>
+        {main}
+      </button>
+      <button type="button" className="btn-link slot-edit" onClick={onEdit}>
+        Modifier
+      </button>
+    </div>
   );
 }
 
 /** Vue batch cooking : ce qu'il faut cuisiner chaque jour de préparation, quantités totales comprises. */
-function PrepView({ onOpen }: { onOpen: (id: SlotId) => void }) {
+function PrepView({ onEdit, onViewRecipe }: { onEdit: (id: SlotId) => void; onViewRecipe: (recipeId: string) => void }) {
   const { state, dispatch } = useStore();
   const catalog = useCatalog();
   const plan = state.plan;
@@ -191,9 +227,14 @@ function PrepView({ onOpen }: { onOpen: (id: SlotId) => void }) {
             const r = catalog.recipes[it.recipeId];
             return (
               <article key={it.sourceSlot} className="card">
-                <button className="linkish" onClick={() => onOpen(it.sourceSlot)}>
-                  <h3>{r.name}</h3>
-                </button>
+                <div className="row align-center">
+                  <button type="button" className="linkish grow" onClick={() => onViewRecipe(it.recipeId)}>
+                    <h3>{r.name}</h3>
+                  </button>
+                  <button type="button" className="btn-link" onClick={() => onEdit(it.sourceSlot)}>
+                    Modifier
+                  </button>
+                </div>
                 <p className="muted small">
                   {it.servings} repas · pour {it.servedSlots.map((s) => slotLabel(s).toLowerCase()).join(', ')}
                   {plan.slots[it.sourceSlot].extraPortions > 0 && ` + ${plan.slots[it.sourceSlot].extraPortions} portion(s) en plus`}
